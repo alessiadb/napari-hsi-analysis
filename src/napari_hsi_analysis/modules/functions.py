@@ -1,5 +1,6 @@
 """ """
 
+import os
 import time
 from bisect import bisect  # RGB
 
@@ -190,7 +191,8 @@ def HSI2RGB(wY, HSI, ydim, xdim, d, threshold):
     # https://www.researchgate.net/profile/Jakob_Sigurdsson
 
     # Load reference illuminant
-    D = spio.loadmat("./D_illuminants.mat")
+    file_path = os.path.join(os.path.dirname(__file__), "D_illuminants.mat")
+    D = spio.loadmat(file_path)
     # D = spio.loadmat(
     #    r"C:\Users\User\OneDrive - Politecnico di Milano\PhD\Programmi\Pyhton\ANALISI\D_illuminants.mat"
     # )
