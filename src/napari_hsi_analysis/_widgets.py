@@ -3,6 +3,7 @@
 import sys
 from os.path import dirname
 
+sys.path.append(dirname(dirname(__file__)))
 import napari
 import pyqtgraph as pg
 from magicgui.widgets import (
@@ -31,7 +32,7 @@ from qtpy.QtWidgets import (
 from napari_hsi_analysis.modules.functions import RGB_to_hex, derivative
 
 # To correctly take the dependance
-sys.path.append(dirname(dirname(__file__)))
+
 print("here: ", dirname(dirname(__file__)))
 
 

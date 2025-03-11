@@ -3,6 +3,7 @@
 import sys
 from os.path import dirname
 
+sys.path.append(dirname(dirname(__file__)))
 import numpy as np
 from modules.functions import (
     HSI2RGB,
@@ -13,7 +14,6 @@ from modules.functions import (
     preprocessing,
 )
 
-sys.path.append(dirname(dirname(__file__)))
 print("here: ", dirname(dirname(__file__)))
 
 
