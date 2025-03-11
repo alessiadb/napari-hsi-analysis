@@ -47,6 +47,18 @@ testing = [
     "pytest-qt",  # https://pytest-qt.readthedocs.io/en/latest/
     "napari",
     "pyqt5",
+    "numpy",
+    "magicgui",
+    "qtpy",
+    "scikit-image",
+    "scikit-learn",
+    "h5py",
+    "bokeh",
+    "plotly",
+    "PyWavelets",
+    "scipy",
+    "pyqtgraph",
+    "qtawesome",
 ]
 
 [project.entry-points."napari.manifest"]
