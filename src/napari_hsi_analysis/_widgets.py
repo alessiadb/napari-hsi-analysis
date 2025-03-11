@@ -5,7 +5,6 @@ from os.path import dirname
 
 import napari
 import pyqtgraph as pg
-from hsi_analysis_plugin.modules.functions import RGB_to_hex, derivative
 from magicgui.widgets import (
     CheckBox,
     ComboBox,
@@ -28,6 +27,8 @@ from qtpy.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
+
+from napari_hsi_analysis.modules.functions import RGB_to_hex, derivative
 
 # To correctly take the dependance
 sys.path.append(dirname(dirname(__file__)))

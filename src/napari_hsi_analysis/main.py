@@ -1,9 +1,10 @@
 """ """
 
 import napari
-from hsi_analysis_plugin._widgets import DataManager, UMAPWidget
-from hsi_analysis_plugin.modules.data import Data
-from hsi_analysis_plugin.modules.plot_widget import PlotWidget
+
+from napari_hsi_analysis._widgets import DataManager, UMAPWidget
+from napari_hsi_analysis.modules.data import Data
+from napari_hsi_analysis.modules.plot_widget import PlotWidget
 
 
 def run_napari_app():
