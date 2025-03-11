@@ -7,7 +7,7 @@ categories: ["Annotation", "Segmentation", "Acquisition"]
 contributions:
   commands:
     - id: napari-hsi-analysis.run_app
-      python_name: napari-hsi-analysis.main:run_napari_app
+      python_name: napari_hsi_analysis.main:run_napari_app
       title: RUN
 
   widgets:
