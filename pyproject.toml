@@ -32,7 +32,7 @@ dependencies = [
     "scikit-learn",
     "h5py",
     "bokeh",
-    "plotly"
+    "plotly",
     "PyWavelets",
     "scipy",
     "pyqtgraph",
