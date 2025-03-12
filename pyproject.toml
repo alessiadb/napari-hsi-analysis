@@ -37,6 +37,8 @@ dependencies = [
     "scipy",
     "pyqtgraph",
     "qtawesome",
+    "matplotlib",
+    "umap-learn",
 ]
 
 [project.optional-dependencies]
@@ -59,6 +61,8 @@ testing = [
     "scipy",
     "pyqtgraph",
     "qtawesome",
+    "matplotlib",
+    "umap-learn",
 ]
 
 [project.entry-points."napari.manifest"]
