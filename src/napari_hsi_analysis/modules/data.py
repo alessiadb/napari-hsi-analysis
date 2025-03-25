@@ -14,7 +14,7 @@ from modules.functions import (
     preprocessing,
 )
 
-print("here: ", dirname(dirname(__file__)))
+# print("here: ", dirname(dirname(__file__)))    #print for the directory folder
 
 
 class Data:
@@ -24,21 +24,26 @@ class Data:
         """ """
         self.filepath = ""
         self.hypercubes = {}
+        self.hypercubes_red = {}
         self.wls = {}
-        self.rgb = {}
-        self.rgb_red = {}
-        self.hypercubes_processed = {}
-        self.hypercubes_processed_red = {}
+        self.rgb = {}  # Dictionary needed for the fusion process
+        self.rgb_red = {}  # Dictionary needed for the fusion process
         self.wls_red = {}
         self.pca_maps = {}
-        self.umap_maps = {}
+        self.umap_maps = (
+            {}
+        )  # valutare se da togliere. tanto non posso ripescarlo o forse si?
         self.modes = [
             "Reflectance",
             "PL",
+            "PL - 2",
             "Reflectance derivative",
+            "Fused",
+            "-",
         ]  # per i fused: self.modes.append
-        self.mode = None
+        self.mode = None  # valutare se da togliere con nuovo widget
         self.wl_value = 0
+        self.fusion_modes = []
 
     def open_file(self, mode: str, path: str) -> None:
         """ """
@@ -68,7 +73,7 @@ class Data:
         savgol_p: int,
     ) -> None:
         """ """
-        self.hypercubes_processed[mode] = preprocessing(
+        self.hypercubes[mode] = preprocessing(
             dataset,
             medfilt_w,
             savgol_w,
@@ -88,7 +93,7 @@ class Data:
     ):
         """ """
         (
-            self.hypercubes_processed_red[mode],
+            self.hypercubes_red[mode],
             self.wls_red[mode],
             self.rgb_red[mode],
         ) = dimensionality_reduction(

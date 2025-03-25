@@ -3,6 +3,7 @@
 import napari
 import numpy as np
 import pyqtgraph as pg
+import pyqtgraph.exporters
 import qtawesome as qta  # Icons
 from magicgui.widgets import PushButton
 from matplotlib.path import Path
@@ -10,7 +11,7 @@ from qtpy.QtWidgets import QFileDialog, QWidget
 
 
 class PlotWidget(QWidget):
-    """ """
+    """Class for the plots"""
 
     def __init__(self, viewer: napari.Viewer, data):
         """ """
@@ -22,240 +23,288 @@ class PlotWidget(QWidget):
         self.vertical_line = None
         self.viewer.dims.events.current_step.connect(self.update_line)
 
-    def setup_plot(self, plot):  # Configure the plot aspect
-        """ """
+    def setup_plot(self, plot, fused=False):
+        """Configure setup aspect"""
         plot.figure.patch.set_facecolor("#262930")
-        self.ax = plot.figure.add_subplot(111)  # Un solo subplot
-        self.ax.set_facecolor("#262930")
-        self.ax.tick_params(axis="x", colors="#D3D4D5", labelsize=14)
-        self.ax.tick_params(axis="y", colors="#D3D4D5", labelsize=14)
-        self.ax.grid(
-            True, linestyle="--", linewidth=0.5, color="#D3D4D5", alpha=0.5
-        )
-        for spine in self.ax.spines.values():
-            spine.set_color("#D3D4D5")
+        if fused:
+            self.ax = plot.figure.add_subplot(121)
+            self.ax2 = plot.figure.add_subplot(122)
+        else:
+            self.ax = plot.figure.add_subplot(111)
+        for ax in [self.ax, getattr(self, "ax2", None)]:
+            if ax is not None:
+                ax.set_facecolor("#262930")
+                ax.tick_params(axis="x", colors="#D3D4D5", labelsize=14)
+                ax.tick_params(axis="y", colors="#D3D4D5", labelsize=14)
+                ax.grid(
+                    True,
+                    linestyle="--",
+                    linewidth=0.5,
+                    color="#D3D4D5",
+                    alpha=0.5,
+                )
+                for spine in self.ax.spines.values():
+                    spine.set_color("#D3D4D5")
 
     def show_plot(
         self,
         plot,
         mode,
-        std_dev_checkbox=False,
-        norm_checkbox=False,
-        reduced_dataset=False,
-        from_scatterplot=False,
-        export_txt=False,
-        derivative=False,
+        std_dev_flag=False,
+        norm_flag=False,
+        reduced_dataset_flag=False,
+        from_scatterplot_flag=False,
+        export_txt_flag=False,
+        derivative_flag=False,
     ):
-        """ """
-        labels_layer = (
-            self.viewer.layers.selection.active.data
-        )  # prende tutti i layer ma la selection è solo nell'immagine in cui l'ho fatto: serve np.sum
-        if from_scatterplot:
-            labels_layer_mask = labels_layer
-        else:
-            labels_layer_mask = np.sum(labels_layer, axis=0)
-        self.ax.clear()  # Pulisce il plot
-        if hasattr(self, "ax2"):
-            self.ax2.clear()
+        """Create spectrum plot"""
+
+        # Clean and reset the plot
+        fig = plot.figure
+        fig.clf()
+        # FUSED:
+        self.setup_plot(plot, fused=(mode == "Fused"))
+        ax_der = (
+            self.ax.twinx() if derivative_flag and mode != "Fused" else None
+        )
+        if ax_der:  # If derivative, create new ax
+            ax_der = self.ax.twinx()
+            ax_der.tick_params(axis="y", colors="#FFA500", labelsize=14)
+            ax_der.spines["right"].set_color("#FFA500")
+            ax_der.set_ylabel("Derivative", color="#FFA500")
+
+        # SELECT LABEL LAYER
+        # takes all the layers but the seleciton is only in the image (WL) in which i've done it
+        labels_layer = self.viewer.layers.selection.active.data
+        # If coming from UMAP, we don't need to do np.sum
+        labels_layer_mask = (
+            labels_layer
+            if from_scatterplot_flag
+            else np.sum(labels_layer, axis=0)
+        )
+
+        # COLORMAP
         colormap = np.array(
             self.viewer.layers.selection.active.colormap.colors
         )
+        print(colormap.shape)
+        num_classes = int(labels_layer_mask.max())
+        wavelengths = self.data.wls[mode]
 
-        print(self.data.wls[mode].shape[0])
-        spectrum = np.zeros(
-            (labels_layer_mask.max(), self.data.wls[mode].shape[0])
+        # Compute spectra and derivatives
+        spectra, stds, spectra_der, stds_der = self.compute_spectra(
+            wavelengths,
+            labels_layer_mask,
+            mode,
+            reduced_dataset_flag,
+            num_classes,
+            norm_flag,
+            derivative_flag,
         )
-        std_dev = np.zeros(
-            (labels_layer_mask.max(), self.data.wls[mode].shape[0])
-        )
-        spectrum_der = np.zeros_like(spectrum)
-        std_dev_der = np.zeros_like(std_dev)
 
-        if derivative:
-            self.ax2 = self.ax.twinx()
-            self.ax2.tick_params(
-                axis="y", colors="#FFA500", labelsize=14
-            )  # Secondo asse Y con colore differente
-            # Imposta i colori delle spine del secondo asse Y
-            self.ax2.spines["right"].set_color(
-                "#FFA500"
-            )  # Solo il bordo destro
-            self.ax2.set_ylabel("Derivative", color="#FFA500")
+        # PLOT SPECTRA
+        for index in range(num_classes):
 
-        for index in range(1, labels_layer_mask.max() + 1, 1):
-            points = np.array(np.where(labels_layer_mask == index))
-            print(points.shape)
-
-            if reduced_dataset:
-                data_selected = self.data.hypercubes_processed_red[mode][
-                    points[0], points[1], :
-                ]
-            elif mode not in self.data.hypercubes_processed:
-                data_selected = self.data.hypercubes[mode][
-                    points[0], points[1], :
-                ]
+            color = colormap[index + 1, :3]
+            print(std_dev_flag)
+            # Fused mode
+            if mode == "Fused":
+                self.plot_fused(index, spectra, stds, color, std_dev_flag)
             else:
-                data_selected = self.data.hypercubes_processed[mode][
-                    points[0], points[1], :
-                ]
-
-            spectrum[index - 1, :] = np.mean(
-                data_selected, axis=0
-            )  # diventa un unico array dove 0 sono i pixel e 1 le wl
-            std_dev[index - 1, :] = np.std(data_selected, axis=0)
-
-            if norm_checkbox:
-                print("Performin normalization")
-                spectrum[index - 1, :] = (
-                    spectrum[index - 1, :] - np.min(spectrum[index - 1, :])
-                ) / (
-                    np.max(spectrum[index - 1, :])
-                    - np.min(spectrum[index - 1, :])
-                )
-                std_dev[index - 1, :] = std_dev[index - 1, :] / (
-                    np.max(spectrum[index - 1, :])
-                    - np.min(spectrum[index - 1, :])
-                )
-
-            if derivative:
-                if reduced_dataset:
-                    data_selected_der = self.data.hypercubes_processed_red[
-                        mode + " derivative"
-                    ][points[0], points[1], :]
-                elif (
-                    mode + " derivative" not in self.data.hypercubes_processed
-                ):
-                    data_selected_der = self.data.hypercubes[
-                        mode + " derivative"
-                    ][points[0], points[1], :]
-                else:
-                    data_selected_der = self.data.hypercubes_processed[
-                        mode + " derivative"
-                    ][points[0], points[1], :]
-
-                spectrum_der[index - 1, :] = np.mean(
-                    data_selected_der, axis=0
-                )  # diventa un unico array dove 0 sono i pixel e 1 le wl
-                std_dev_der[index - 1, :] = np.std(data_selected_der, axis=0)
-                self.ax2.plot(
-                    self.data.wls[mode],
-                    spectrum_der[index - 1, :],
-                    color=colormap[index, :3],
-                    linewidth=2,
-                    linestyle="--",
-                )
-                if std_dev_checkbox:
-                    self.ax2.fill_between(
-                        self.data.wls[mode],
-                        spectrum_der[index - 1, :] - std_dev_der[index - 1, :],
-                        spectrum_der[index - 1, :] + std_dev_der[index - 1, :],
-                        color=colormap[index, :3],
-                        alpha=0.3,
+                # Plot detivative if requested
+                if derivative_flag and ax_der is not None:
+                    self.plot_with_std(
+                        ax_der,
+                        wavelengths,
+                        spectra_der[index],
+                        stds_der[index] if std_dev_flag else None,
+                        color,
+                        linestyle="--",
                     )
-
-            if std_dev_checkbox:
-                self.ax.fill_between(
-                    self.data.wls[mode],
-                    spectrum[index - 1, :] - std_dev[index - 1, :],
-                    spectrum[index - 1, :] + std_dev[index - 1, :],
-                    color=colormap[index, :3],
-                    alpha=0.3,
+                self.plot_with_std(
+                    self.ax,
+                    wavelengths,
+                    spectra[index],
+                    stds[index] if std_dev_flag else None,
+                    color,
                 )
 
-            self.ax.plot(
-                self.data.wls[mode],
-                spectrum[index - 1, :],
-                color=colormap[index, :3],
-                linewidth=2,
-            )
-
-        if derivative:
-            self.ax2.set_ylim(
-                spectrum_der.min() - std_dev_der.min(),
-                spectrum_der.max() + std_dev_der.max(),
-            )
-
-        if export_txt:
-            data_to_be_saved = np.column_stack((self.data.wls[mode],))
-            for i in range(spectrum.shape[0]):
-                data_to_be_saved = np.column_stack(
-                    (data_to_be_saved, spectrum[i, :], std_dev[i, :])
-                )
-            # filename = self.data.filepath[:-4]+"_"+str(mode)+"_SPECTRA.txt"
+        if export_txt_flag:
             filename, _ = QFileDialog.getSaveFileName(
                 self, "Save spectra in .txt", "", "txt (*.txt)"
             )
-            if filename:  # Se l'utente ha scelto un file
-                np.savetxt(
-                    filename,
-                    data_to_be_saved,
-                    fmt="%.6f",
-                    delimiter="\t",
-                    header="Wavelength\t"
-                    + "\t".join(
-                        [
-                            f"Spectrum{i+1}\tStd{i+1}"
-                            for i in range(spectrum.shape[0])
-                        ]
-                    ),
-                    comments="",
+            if filename:
+                self.export_spectra_txt(filename, wavelengths, spectra, stds)
+
+        plot.draw()
+
+    def compute_spectra(
+        self,
+        wavelengths,
+        mask,
+        mode,
+        reduced_flag,
+        num_classes,
+        normalize_flag,
+        derivative_flag,
+    ):
+        """Compute mean and std of spectra (and derivative if requested)."""
+        wl_len = wavelengths.shape[0]
+        spectra = np.zeros((num_classes, wl_len))
+        stds = np.zeros((num_classes, wl_len))
+        spectra_der = np.zeros_like(spectra)
+        stds_der = np.zeros_like(stds)
+
+        for idx in range(num_classes):
+            points = np.array(np.where(mask == idx + 1))
+
+            # Handle Fused outside
+            if mode == "Fused":
+                mode1, mode2 = self.data.fusion_modes
+                cube = (
+                    self.data.hypercubes_red
+                    if reduced_flag
+                    else self.data.hypercubes
                 )
-                print("File salvato con successo!")
-                print(
-                    "Colormap: ", colormap[1 : labels_layer_mask.max() + 1, :3]
+                data1 = cube[mode1][points[0], points[1], :]
+                data2 = cube[mode2][points[0], points[1], :]
+                data_selected = np.concatenate((data1, data2), axis=1)
+            else:
+                cube = (
+                    self.data.hypercubes_red
+                    if reduced_flag
+                    else self.data.hypercubes
                 )
+                data_selected = cube[mode][points[0], points[1], :]
 
-        else:
-            plot.draw()  # Forza il refresh del plot
+            mean_spec = np.mean(data_selected, axis=0)
+            std_spec = np.std(data_selected, axis=0)
+            print(std_spec)
 
-    def update_line(self, event):  # NON FUNZIONA DA RIVEDERE
-        """ """
-        if not hasattr(self, "vertical_line") or self.vertical_line is None:
-            return
-        index = self.viewer.dims.current_step[0]  # Otteniamo l'indice corrente
-        wl = self.data.wls[self.data.mode]
-        if 0 <= index < len(wl):  # Controlla che sia dentro i limiti
-            self.vertical_line.set_xdata([wl[index]])  # Sposta la linea
-            self.vertical_line.figure.canvas.draw_idle()
+            if normalize_flag:
+                min_val, max_val = np.min(mean_spec), np.max(mean_spec)
+                mean_spec = (mean_spec - min_val) / (max_val - min_val)
+                std_spec = std_spec / (max_val - min_val)
 
-        self.data.wl_value = self.viewer.dims.current_step[0]
-        # selected_layer = viewer.layers.selection.active
-        self.viewer.text_overlay.text = f"Wavelength: {round(self.data.wls[self.data.mode][self.data.wl_value], 2)} nm \nChannel: {self.data.wl_value}"
-        # if "REDUCED" in selected_layer.name:
-        #    wl_selected = self.data.wls_red
-        #    viewer.text_overlay.text = f"Channel: {round(wl_selected[self.data.mode][self.data.wl_value], 2)}"
-        # else:
-        #    wl_selected = self.data.wls
-        #    viewer.text_overlay.text = f"Wavelength: {round(wl_selected[self.data.mode][self.data.wl_value], 2)} nm"
-        print(self.data.wls[self.data.mode][self.data.wl_value])
+            spectra[idx] = mean_spec
+            stds[idx] = std_spec
 
-    def show_scatterplot(self, plot, data, hex_reshaped):
-        """ """
-        if hasattr(self, "scatter") and self.scatter is not None:
+            if derivative_flag:
+                cube_der = (
+                    self.data.hypercubes_red
+                    if reduced_flag
+                    else self.data.hypercubes
+                )
+                data_der = cube_der[mode + " derivative"][
+                    points[0], points[1], :
+                ]
+                spectra_der[idx] = np.mean(data_der, axis=0)
+                stds_der[idx] = np.std(data_der, axis=0)
+
+        return spectra, stds, spectra_der, stds_der
+
+    def plot_with_std(self, ax, x, y, std=None, color="blue", linestyle="-"):
+        """Plot with optional standard deviation shading."""
+        ax.plot(x, y, color=color, linewidth=2, linestyle=linestyle)
+        print(std)
+        if std is not None:
+            ax.fill_between(x, y - std, y + std, color=color, alpha=0.3)
+
+    def plot_fused(self, index, spectra, stds, color, std_dev_checkbox):
+        """Handle the plotting of fused datasets."""
+        fusion_point = self.data.wls[self.data.fusion_modes[0]].shape[0]
+        spectrum_1 = spectra[index, :fusion_point]
+        spectrum_2 = spectra[index, fusion_point:]
+        std_dev_1 = stds[index, :fusion_point]
+        std_dev_2 = stds[index, fusion_point:]
+
+        wls_1 = self.data.wls[self.data.fusion_modes[0]]
+        wls_2 = self.data.wls[self.data.fusion_modes[1]]
+
+        self.ax.plot(wls_1, spectrum_1, color=color, linewidth=2)
+        self.ax2.plot(wls_2, spectrum_2, color=color, linewidth=2)
+
+        if std_dev_checkbox:
+            self.ax.fill_between(
+                wls_1,
+                spectrum_1 - std_dev_1,
+                spectrum_1 + std_dev_1,
+                color=color,
+                alpha=0.3,
+            )
+            self.ax2.fill_between(
+                wls_2,
+                spectrum_2 - std_dev_2,
+                spectrum_2 + std_dev_2,
+                color=color,
+                alpha=0.3,
+            )
+
+    def export_spectra_txt(self, filename, wavelengths, spectra, stds):
+        """Export spectra and standard deviation to TXT."""
+        data_to_save = np.column_stack(
+            (
+                wavelengths,
+                *[
+                    np.column_stack((spectra[i], stds[i]))
+                    for i in range(spectra.shape[0])
+                ],
+            )
+        )
+
+        header = "Wavelength\t" + "\t".join(
+            [f"Spectrum{i+1}\tStd{i+1}" for i in range(spectra.shape[0])]
+        )
+
+        np.savetxt(
+            filename,
+            data_to_save,
+            fmt="%.6f",
+            delimiter="\t",
+            header=header,
+            comments="",
+        )
+        # logging.info("Spectra exported successfully to %s", filename)
+
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+    def setup_scatterplot(self, plot):
+        """Setup basic scatterplot appearance"""
+        plot.setBackground("w")
+        for axis in ("left", "bottom"):
+            plot.getAxis(axis).setTicks([])
+            plot.getAxis(axis).setStyle(tickLength=0)
+            plot.getAxis(axis).setPen(None)
+        plot.setMinimumSize(300, 400)
+
+    def show_scatterplot(self, plot, data, hex_colors):
+        """Display sctterplot"""
+        if hasattr(self, "scatter") and self.scatter:
             plot.removeItem(self.scatter)
         self.scatter = pg.ScatterPlotItem(
-            pos=data, pen=None, symbol="o", size=1, brush=hex_reshaped
+            pos=data, pen=None, symbol="o", size=1, brush=hex_colors
         )
-        # pg.mkBrush(0, 0, 255, 150))
         plot.addItem(self.scatter)
-        plot.setBackground("w")
-        plot.update()
         plot.getViewBox().autoRange()
+        plot.update()
 
     def polygon_selection(self, plot):  # Abilita la selezione poligonale
-        """ """
+        """Enable polygon selection on the scatterplot"""
         self.plot = plot
         if self.poly_roi:  # Se è già stata usala la polyroi viene cancellata
             self.plot.removeItem(self.poly_roi)
-        self.poly_roi = pg.PolyLineROI([], closed=True, pen="r")
+        self.poly_roi = pg.PolyLineROI(
+            [],
+            closed=True,
+            pen="r",
+            handlePen=pg.mkPen("red"),
+        )
         self.plot.addItem(self.poly_roi)
         self.drawing = True
         self.plot.scene().sigMouseClicked.connect(self.add_point_to_polygon)
 
-    def add_point_to_polygon(
-        self, event
-    ):  # Aggiunge il poligono in base all'evento sul mouse
-        """ """
+    def add_point_to_polygon(self, event):
+        """Add points from the polygon ROI"""
         if not self.drawing:
             return
         pos = self.plot.plotItem.vb.mapSceneToView(event.scenePos())
@@ -268,8 +317,8 @@ class PlotWidget(QWidget):
                 self.add_point_to_polygon
             )
 
-    def print_selected_points(
-        self, scatterdata, hsi_image, mode, hex_reshaped, plot
+    def show_selected_points(
+        self, scatterdata, hsi_image, mode, hex_colors, plot
     ):
         """ """
         if not self.poly_roi:
@@ -342,11 +391,23 @@ class PlotWidget(QWidget):
         plot.getViewBox().autoRange()
         """
 
-    def create_home_button(self, label):
+    def save_image_button(self, plot):
         """ """
+        filename, _ = QFileDialog.getSaveFileName(
+            self, "Save UMAP image", "", "png (*.png)"
+        )
+        if filename:
+            exporter = pg.exporters.ImageExporter(plot.getPlotItem())
+            exporter.parameters()["width"] = 2000
+            exporter.parameters()["height"] = 2000
+            exporter.export(filename)
+            print("Image saved!")
+
+    def create_button(self, icon_name):
+        """Create styled icon button"""
         btn = PushButton(text="").native  # Nessun testo
         btn.setIcon(
-            qta.icon(f"{label}", color="#D3D4D5")
+            qta.icon(f"{icon_name}", color="#D3D4D5")
         )  # Icona con colore personalizzato
         btn.setStyleSheet(
             """
@@ -361,3 +422,25 @@ class PlotWidget(QWidget):
         )
         btn.setFixedSize(30, 30)  # Dimensione fissa
         return btn
+
+    # ------ NOT USED CODE ------
+    def update_line(self, event):  # NON FUNZIONA DA RIVEDERE
+        """ """
+        if not hasattr(self, "vertical_line") or self.vertical_line is None:
+            return
+        index = self.viewer.dims.current_step[0]  # Otteniamo l'indice corrente
+        wl = self.data.wls[self.data.mode]
+        if 0 <= index < len(wl):  # Controlla che sia dentro i limiti
+            self.vertical_line.set_xdata([wl[index]])  # Sposta la linea
+            self.vertical_line.figure.canvas.draw_idle()
+
+        self.data.wl_value = self.viewer.dims.current_step[0]
+        # selected_layer = viewer.layers.selection.active
+        self.viewer.text_overlay.text = f"Wavelength: {round(self.data.wls[self.data.mode][self.data.wl_value], 2)} nm \nChannel: {self.data.wl_value}"
+        # if "REDUCED" in selected_layer.name:
+        #    wl_selected = self.data.wls_red
+        #    viewer.text_overlay.text = f"Channel: {round(wl_selected[self.data.mode][self.data.wl_value], 2)}"
+        # else:
+        #    wl_selected = self.data.wls
+        #    viewer.text_overlay.text = f"Wavelength: {round(wl_selected[self.data.mode][self.data.wl_value], 2)} nm"
+        print(self.data.wls[self.data.mode][self.data.wl_value])

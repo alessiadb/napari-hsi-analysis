@@ -17,11 +17,11 @@ from sklearn.decomposition import PCA
 
 
 def open_file(filepath):
-    # Verifica l'estensione del file
+    """ """
     file_extension = filepath.split(".")[-1].lower()
     if file_extension not in ["mat", "h5"]:
         print(
-            f"Errore: formato di file non supportato. Atteso .mat o .h5, trovato .{file_extension}."
+            f"Error: file format not supported. Expected .mat o .h5, found .{file_extension}."
         )
         return None, None
 
@@ -45,10 +45,10 @@ def open_file(filepath):
     data = None
     wl = None
 
-    # Se il file è un .mat, prova a caricarlo
+    # if .mat file
     if file_extension == "mat":
         f = loadmat(filepath)
-        print("Dataset presenti nel file matlab:")
+        print("Dataset presents (MATLAB file):")
         for dataset_name in f:
             print(dataset_name)
             if dataset_name in hypercube_names:
@@ -66,15 +66,13 @@ def open_file(filepath):
             print("Data shape:", data.shape, "\nWL shape:", wl.shape)
             return data, wl
         else:
-            print(
-                "Errore: i dataset necessari non sono presenti nel file .mat."
-            )
+            print("ERROR: the .mat file does not contain correct datas.")
             return None, None
 
-    # Se il file è un .h5, prova a caricarlo
+    # If .h5 file
     elif file_extension == "h5":
         with h5py.File(filepath, "r") as f:
-            print("Dataset presenti nel file HDF5:")
+            print("Dataset presents (HDF5 file):")
             for dataset_name in f:
                 print(dataset_name)
                 if dataset_name in hypercube_names:
@@ -90,68 +88,13 @@ def open_file(filepath):
             print("Data shape:", data.shape, "\nWL shape:", wl.shape)
             return data, wl
         else:
-            print(
-                "Errore: i dataset necessari non sono presenti nel file .h5."
-            )
+            print("ERROR: the .h5 file does not contain correct datas.")
             return None, None
 
 
-# def open_file(filepath):
-#    hypercube_names = [
-#        "data",
-#        "data_RIFLE",
-#        "Y",
-#        "Hyperspectrum_cube",
-#        "XRFdata",
-#    ]
-#    wls_names = [
-#        "WL",
-#        "WL_RIFLE",
-#        "X",
-#        "fr_real",
-#        "spectra",
-#        "wavelength",
-#        "ENERGY",
-#    ]
-#
-#    try:
-#        f = loadmat(filepath)
-#        print("Dataset presenti nel file matlab:")
-#        for dataset_name in f:
-#            print(dataset_name)
-#            if dataset_name in hypercube_names:
-#                data = np.array(f[dataset_name])
-#                if dataset_name == "Hyperspectrum_cube":
-#                    data = data[:, :, ::-1]
-#                data = np.rot90(data, k=3, axes=(0, 1))
-#                data = data[:, ::-1, :]
-#            if dataset_name in wls_names:
-#                wl = np.array(f[dataset_name]).flatten()
-#                if dataset_name == "fr_real":
-#                    wl = 3 * 10**5 / wl
-#                    wl = wl[::-1]
-#
-#    except Exception as e:
-#        print(f"Errore: {e}")
-#        with h5py.File(filepath, "r") as f:
-#            print("Dataset presenti nel file HDF5:")
-#            for dataset_name in f:
-#                print(dataset_name)
-#                if dataset_name in hypercube_names:
-#                    data = np.array(f[dataset_name])
-#                    if dataset_name == "Hyperspectrum_cube":
-#                        data = data[:, :, ::-1]
-#                if dataset_name in wls_names:
-#                    wl = np.array(f[dataset_name]).flatten()
-#                    if dataset_name == "fr_real":
-#                        wl = 3 * 10**5 / wl
-#                        wl = wl[::-1]
-#
-#    print("Data shape:", data.shape, "\nWL shape:", wl.shape)
-#    return data, wl
-
-
+# WE ARE USING IT?
 def plotSpectra(data, label, wl):
+    """ """
     dataMasked = np.einsum("ijk,jk->ijk", data, label)
     dataSum = np.sum(
         dataMasked.reshape(
@@ -160,13 +103,18 @@ def plotSpectra(data, label, wl):
         1,
     )
     print(dataSum)
-    # fig = plt.plot(wl, dataSum)
-    # fig.show() #Se stampo la figura dà errore nel programma principale e quindi non me la stampa senza debug
     return dataSum
+
+
+# %% NORMALIZATION
+def normalize(channel):
+    """ """
+    return (channel - np.min(channel)) / (np.max(channel) - np.min(channel))
 
 
 # %% CREATE RGB
 def HSI2RGB(wY, HSI, ydim, xdim, d, threshold):
+    """ """
     # wY: wavelengths in nm
     # Y : HSI as a (#pixels x #bands) matrix,
     # dims: x & y dimension of image
@@ -286,7 +234,9 @@ def HSI2RGB(wY, HSI, ydim, xdim, d, threshold):
 
 
 # %% RGB TO HEX: create a matrix with hex strings of rgb in that pixel
-def RGB_to_hex(RGB_image):
+def RGB_to_hex(RGB_image, brightness_factor=1.1):
+    """ """
+    RGB_image = np.clip(RGB_image * brightness_factor, 0, 1)
     image_scaled = (RGB_image * 255).astype(int)
     hex_matrix = np.apply_along_axis(
         lambda rgb: "#{:02x}{:02x}{:02x}".format(*rgb),
@@ -294,6 +244,44 @@ def RGB_to_hex(RGB_image):
         arr=image_scaled,
     )
     return hex_matrix
+
+
+# %% FALSE RGB:
+def falseRGB(data, wl, R, G, B):
+    """ """
+    R = np.array(R)
+    G = np.array(G)
+    B = np.array(B)
+    R_image = np.mean(
+        data[
+            :,
+            :,
+            (np.abs(wl - R[0])).argmin() : (np.abs(wl - R[1])).argmin() + 1,
+        ],
+        axis=2,
+    )
+    G_image = np.mean(
+        data[
+            :,
+            :,
+            (np.abs(wl - G[0])).argmin() : (np.abs(wl - G[1])).argmin() + 1,
+        ],
+        axis=2,
+    )
+    B_image = np.mean(
+        data[
+            :,
+            :,
+            (np.abs(wl - B[0])).argmin() : (np.abs(wl - B[1])).argmin() + 1,
+        ],
+        axis=2,
+    )
+    R_image = normalize(R_image)
+    G_image = normalize(G_image)
+    B_image = normalize(B_image)
+    rgb_image = np.stack([R_image, G_image, B_image], axis=-1)
+    rgb_uint8 = (rgb_image * 255).astype(np.uint8)
+    return rgb_uint8
 
 
 # %% PREPROCESSING
@@ -305,6 +293,7 @@ def preprocessing(
     medfilt_checkbox=True,
     savgol_checkbox=True,
 ):
+    """ """
     data_processed = data
     print("Data is now data_processed")
     if savgol_checkbox:
@@ -329,54 +318,54 @@ def preprocessing(
 
 
 # %% DIMENSIONALITY REDUCTION
-# DIMENSIONE SPAZIALE CON DWT
+# SPATIAL DIMENSION WITH DWT
 def reduce_spatial_dimension_dwt(hsi_cube, wavelet="haar", level=1):
+    """ """
     H, W, B = hsi_cube.shape
     reduced_cube = []
 
-    for b in range(B):  # Itera su ciascuna banda spettrale
-        # Applica la DWT bidimensionale alla banda
+    for b in range(B):  # Iterations on spectral bands
+        # 2D DWT ats each band
         coeffs2 = pywt.wavedec2(
             hsi_cube[:, :, b], wavelet=wavelet, level=level
         )
-        LL, (LH, HL, HH) = (
-            coeffs2  # Conserva solo la componente LL (approssimazione)
-        )
+        LL, (LH, HL, HH) = coeffs2
         reduced_cube.append(LL)
 
-    # Converti la lista delle bande ridotte in un nuovo cubo
+    # The list converted in a cube
     reduced_cube = np.stack(reduced_cube, axis=-1)
     return reduced_cube
 
 
-# DIMENSIONE SPETTRALE CON DWT
+# SPECTRAL DIMENSION WITH DWT
 def reduce_bands_with_dwt(hsi_data, wavelet="db1", level=2):
-
+    """ """
     h, w, b = hsi_data.shape
-    approx_bands = []  # Per memorizzare le bande di approssimazione
+    approx_bands = []
 
-    # Itera sui pixel spaziali
+    # Iteration on spatial pixels
     for i in range(h):
         for j in range(w):
-            # Applica DWT lungo l'asse spettrale (bande)
+            # DWT along spectral bands
             coeffs = pywt.wavedec(
                 hsi_data[i, j, :], wavelet=wavelet, level=level
             )
-            approx = coeffs[0]  # Banda di approssimazione (low-pass)
+            approx = coeffs[0]
             approx_bands.append(approx)
 
-    # Converti le bande di approssimazione in un nuovo cubo iperspettrale
+    # The list converted in a cube
     approx_bands = np.array(approx_bands)
-    b_reduced = approx_bands.shape[1]  # Numero di bande ridotte
+    b_reduced = approx_bands.shape[1]
     reduced_hsi = approx_bands.reshape(h, w, b_reduced) / level
 
     return reduced_hsi
 
 
-# TOTALE
+# TOTAL DIMENSIONALITY REDUCTION
 def dimensionality_reduction(
     data, spectral_dimred_checkbox, spatial_dimred_checkbox, wl
 ):
+    """ """
     reduced_data = data
     if spatial_dimred_checkbox:
         reduced_data = reduce_spatial_dimension_dwt(reduced_data)
@@ -384,6 +373,7 @@ def dimensionality_reduction(
             np.reshape(reduced_data, [-1, reduced_data.shape[2]])
             / reduced_data.max()
         )
+        reduced_data = reduced_data / 2
         reduced_rgb = HSI2RGB(
             wl,
             dataset_reshaped,
@@ -394,19 +384,15 @@ def dimensionality_reduction(
         )
     if spectral_dimred_checkbox:
         reduced_data = reduce_bands_with_dwt(reduced_data)
-    print("Dimensioni originali del cubo:", data.shape)
-    print("Dimensioni del cubo ridotto:", reduced_data.shape)
+    print("Original dimensions of the hypercube:", data.shape)
+    print("Reduced dimensions of the reduced hypercube:", reduced_data.shape)
     reduced_wl = np.arange(reduced_data.shape[2])
     return reduced_data, reduced_wl, reduced_rgb
 
 
 # %% DERIVATIVE
 def derivative(data, savgol_w=9, savgol_pol=3, deriv=1):
-    # dx = wl[1]-wl[0]
-    # data_firstDev = np.gradient(data, dx, axis=(2))
-    # if savgol_pol>0 and savgol_w>0:
-    # print("Doing Savitzki-Golay filter: Window=", str(savgol_w), " Polynomial: ", str(savgol_pol))
-    # data_firstDev = scipy.signal.savgol_filter(data_firstDev, savgol_w, savgol_pol, axis=2)
+    """ """
     data_firstDev = np.zeros_like(data)
     print(
         "Doing Savitzki-Golay filter: Window=",
@@ -423,11 +409,41 @@ def derivative(data, savgol_w=9, savgol_pol=3, deriv=1):
     return data_firstDev
 
 
+# %% FUSION
+def datasets_fusion(data1, data2, wl1, wl2, norm="l2"):
+    """ """
+    print(
+        f"Dimensions of dataset 1 and 2: \nData1: {data1.shape} \nData2: {data2.shape} \n\n"
+    )
+    data1_reshaped = data1.reshape(-1, data1.shape[2])
+    data2_reshaped = data2.reshape(-1, data2.shape[2])
+    if norm == "l2":
+        corr1 = np.linalg.norm(data1_reshaped, ord=None)
+        corr2 = np.linalg.norm(data2_reshaped, ord=None)
+        print(
+            f"Norms for dataset 1 and 2: \nData1: {corr1} \nData2: {corr2} \n\n"
+        )
+        data1_reshaped = data1_reshaped / corr1
+        data2_reshaped = data2_reshaped / corr2
+    data1 = data1_reshaped.reshape(data1.shape[0], data1.shape[1], -1)
+    data2 = data2_reshaped.reshape(data2.shape[0], data2.shape[1], -1)
+
+    wl_fused = np.concatenate((wl1, wl2))
+    data_fused = np.concatenate((data1, data2), axis=2)
+    fusion_point = data1.shape[2]
+    print(
+        f"The new dataset has the shape: {data_fused.shape} \nThe fusion point is: {fusion_point}"
+    )
+
+    return data_fused, wl_fused
+
+
 # %% ----- ----- ----- ----- ANALYSIS ----- ----- ----- -----
 
 
 # %% PCA
 def PCA_analysis(data, n_components, points=None, variance=False):
+    """ """
     if points is None:
         points = []
 
@@ -513,9 +529,10 @@ def UMAP_analysis(
     min_dist=0.0,
     random_state=42,
 ):
+    """ """
     if points is None:
         points = []
-    start_time = time.time()  # Inizio del timer
+    start_time = time.time()  # Start of the timer
 
     if downsampling != 1:
         data = data[0::downsampling, 0::downsampling, :]
@@ -532,13 +549,12 @@ def UMAP_analysis(
         n_jobs=-1,
     )
     # output_metric='hyperboloid',)
-    # t-SNE
     if len(points) > 0:
         umap_result = fit.fit_transform(data_reshaped[points, :])
     else:
         umap_result = fit.fit_transform(data_reshaped)
     print("UMAP result dimension: ", umap_result.shape)
-    elapsed_time = time.time() - start_time  # Tempo trascorso
-    print(f"Tempo trascorso: {elapsed_time:.2f} secondi")
+    elapsed_time = time.time() - start_time
+    print(f"Time: {elapsed_time:.2f} seconds")
 
     return umap_result

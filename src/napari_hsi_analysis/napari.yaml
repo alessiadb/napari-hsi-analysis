@@ -12,4 +12,4 @@ contributions:
 
   widgets:
     - command: napari-hsi-analysis.run_app
-      display_name: Data Manager
+      display_name: HSI Analysis
