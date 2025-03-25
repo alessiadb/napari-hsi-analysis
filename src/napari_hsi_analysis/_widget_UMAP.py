@@ -226,11 +226,11 @@ class UMAPWidget(QWidget):
         self.plot_widget.show_plot(
             self.mean_plot,
             mode=self.modes_combobox.value,
-            std_dev_checkbox=self.std_checkbox.value,
-            norm_checkbox=self.norm_checkbox.value,
-            reduced_dataset=self.reduced_dataset.value,
-            from_scatterplot=True,
-            derivative=self.derivative_checkbox.value,
+            std_dev_flag=self.std_checkbox.value,
+            norm_flag=self.norm_checkbox.value,
+            reduced_dataset_flag=self.reduced_dataset.value,
+            from_scatterplot_flag=True,
+            derivative_flag=self.derivative_checkbox.value,
         )
 
     def export_spectrum(self):
