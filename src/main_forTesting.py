@@ -38,7 +38,7 @@ class NapariApp:
         self.setup_connections()
 
     # def create_dock_widget(self, widget, name, area="right", min_size=(400, 400)):
-    #    """Aggiunge un dock widget al viewer."""
+    #    """Add a dock widget to the viewer."""
     #    dock = self.viewer.window.add_dock_widget(widget, name=name, area=area)
     #    if min_size:
     #        dock.setMinimumSize(*min_size)

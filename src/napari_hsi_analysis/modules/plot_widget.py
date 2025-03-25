@@ -87,7 +87,6 @@ class PlotWidget(QWidget):
         colormap = np.array(
             self.viewer.layers.selection.active.colormap.colors
         )
-        print(colormap.shape)
         num_classes = int(labels_layer_mask.max())
         wavelengths = self.data.wls[mode]
 
@@ -106,7 +105,6 @@ class PlotWidget(QWidget):
         for index in range(num_classes):
 
             color = colormap[index + 1, :3]
-            print(std_dev_flag)
             # Fused mode
             if mode == "Fused":
                 self.plot_fused(index, spectra, stds, color, std_dev_flag)
@@ -179,7 +177,6 @@ class PlotWidget(QWidget):
 
             mean_spec = np.mean(data_selected, axis=0)
             std_spec = np.std(data_selected, axis=0)
-            print(std_spec)
 
             if normalize_flag:
                 min_val, max_val = np.min(mean_spec), np.max(mean_spec)
@@ -206,7 +203,6 @@ class PlotWidget(QWidget):
     def plot_with_std(self, ax, x, y, std=None, color="blue", linestyle="-"):
         """Plot with optional standard deviation shading."""
         ax.plot(x, y, color=color, linewidth=2, linestyle=linestyle)
-        print(std)
         if std is not None:
             ax.fill_between(x, y - std, y + std, color=color, alpha=0.3)
 
@@ -288,10 +284,10 @@ class PlotWidget(QWidget):
         plot.getViewBox().autoRange()
         plot.update()
 
-    def polygon_selection(self, plot):  # Abilita la selezione poligonale
+    def polygon_selection(self, plot):
         """Enable polygon selection on the scatterplot"""
         self.plot = plot
-        if self.poly_roi:  # Se è già stata usala la polyroi viene cancellata
+        if self.poly_roi:  # If polyroi selected, cancel it
             self.plot.removeItem(self.poly_roi)
         self.poly_roi = pg.PolyLineROI(
             [],
@@ -311,7 +307,7 @@ class PlotWidget(QWidget):
         points = self.poly_roi.getState()["points"]
         points.append([pos.x(), pos.y()])
         self.poly_roi.setPoints(points)
-        if event.double():  # Chiude il poligono con doppio clic
+        if event.double():  # Close polygon with double click
             self.drawing = False
             self.plot.scene().sigMouseClicked.disconnect(
                 self.add_point_to_polygon
@@ -322,7 +318,7 @@ class PlotWidget(QWidget):
     ):
         """ """
         if not self.poly_roi:
-            print("Nessuna selezione attiva.")
+            print("No active selection!")
             return
         polygon = self.poly_roi.getState()["points"]
         polygon = np.array(polygon)
@@ -334,7 +330,7 @@ class PlotWidget(QWidget):
         ]
         # print("Punti selezionati:", selected_points)
         # print("Indici selezionati:", selected_indices)
-        # CREAZIONE DEL LAYER LABELS
+        # CREATION OF LAYER LABELS
         labels = np.zeros(
             (hsi_image.shape[0], hsi_image.shape[1]), dtype=np.int32
         )
@@ -345,21 +341,15 @@ class PlotWidget(QWidget):
         ]
         if existing_layers:
             labels_layer = existing_layers[0]
-            labels = (
-                labels_layer.data.copy()
-            )  # Copiamo i dati esistenti per aggiornarli
-            new_label_value = (
-                labels.max() + 1
-            )  # Assegniamo un nuovo valore di label
+            labels = labels_layer.data.copy()
+            new_label_value = labels.max() + 1
         else:
             labels_layer = None
-            new_label_value = 1  # Se non esiste, partiamo da 1
+            new_label_value = 1
 
-        # AGGIORNAMENTO DELLE LABELS NEI PUNTI SELEZIONATI
+        # LABELS IN THE SELCTED POINTS
         for idx in selected_indices:
-            row, col = divmod(
-                idx, hsi_image.shape[1]
-            )  # Convertiamo indice in coordinate 2D
+            row, col = divmod(idx, hsi_image.shape[1])  # Converted in 2D
             labels[row, col] = new_label_value
         if labels_layer:
             labels_layer.data = labels
@@ -368,28 +358,6 @@ class PlotWidget(QWidget):
             labels_layer = self.viewer.add_labels(
                 labels, name=f"{mode} SCATTERPLOT LABELS"
             )
-        """
-        # AGGIORNAMENTO DELLO SCATTERPLOT CON I COLORI DELLA LABELS
-        labels_flat = labels_layer.data.flatten()
-        unique_labels = np.unique(labels_flat[labels_flat > 0])  # Escludiamo lo 0
-
-        # Creiamo una mappa colore per ogni label
-        colormap = {label: pg.intColor(i, len(unique_labels)) for i, label in enumerate(unique_labels)}
-
-        # Creiamo i colori per lo scatterplot
-        point_colors = [colormap[label] if label in colormap else pg.mkBrush(color)
-                        for label, color in zip(labels_flat, hex_reshaped)]
-
-        # Aggiorniamo lo scatterplot
-        if hasattr(self, "scatter") and self.scatter is not None:
-            plot.removeItem(self.scatter)
-
-        self.scatter = pg.ScatterPlotItem(pos=scatterdata, pen=None, symbol='o', size=3, brush=point_colors)
-        plot.addItem(self.scatter)
-        plot.setBackground('w')
-        plot.update()
-        plot.getViewBox().autoRange()
-        """
 
     def save_image_button(self, plot):
         """ """
@@ -405,10 +373,8 @@ class PlotWidget(QWidget):
 
     def create_button(self, icon_name):
         """Create styled icon button"""
-        btn = PushButton(text="").native  # Nessun testo
-        btn.setIcon(
-            qta.icon(f"{icon_name}", color="#D3D4D5")
-        )  # Icona con colore personalizzato
+        btn = PushButton(text="").native
+        btn.setIcon(qta.icon(f"{icon_name}", color="#D3D4D5"))  # Icon
         btn.setStyleSheet(
             """
             QPushButton {

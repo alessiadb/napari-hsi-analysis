@@ -294,13 +294,13 @@ class DataManager(QWidget):
         """ """
         channel_layout = QHBoxLayout()
         label = Label(value=label_name)
-        label.native.setFixedWidth(20)  # Per non farlo troppo largo
+        label.native.setFixedWidth(20)
         channel_layout.addWidget(label.native)
         min_spinbox = SpinBox(
             min=0, max=2500, step=1, value=value[0], label=label_name
         )
         max_spinbox = SpinBox(min=0, max=2500, step=1, value=value[1])
-        channel_layout.addWidget(min_spinbox.native)  # Se usi magicgui SpinBox
+        channel_layout.addWidget(min_spinbox.native)
         channel_layout.addWidget(max_spinbox.native)
 
         return channel_layout, min_spinbox, max_spinbox
@@ -397,7 +397,7 @@ class DataManager(QWidget):
             spatial_dimred_checkbox,
             self.data.wls[data_mode],
         )
-        print(self.data.hypercubes_red[data_mode].shape)
+        # print(self.data.hypercubes_red[data_mode].shape)
         self.viewer.add_image(
             self.data.hypercubes_red[data_mode].transpose(2, 0, 1),
             name=str(data_mode) + " - REDUCED",

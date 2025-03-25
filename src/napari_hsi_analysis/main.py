@@ -10,7 +10,7 @@ from napari_hsi_analysis.modules.plot_widget import PlotWidget
 
 
 def run_napari_app():
-    """Aggiunge i widget al viewer esistente senza creare una nuova finestra."""
+    """Add widgets to the viewer"""
     try:
         viewer = napari.current_viewer()
     except AttributeError:
@@ -24,7 +24,7 @@ def run_napari_app():
     fusion_widget = FusionWidget(viewer, data)
     umap_widget = UMAPWidget(viewer, data, plot_widget_umap)
 
-    # Aggiungi i widget come dock widget nel viewer
+    # Add widget as dock
     datamanager_dock = viewer.window.add_dock_widget(
         datamanager_widget, name="Data Manager", area="right"
     )
@@ -35,13 +35,12 @@ def run_napari_app():
         umap_widget, name="UMAP", area="right"
     )
 
-    # Tabifica i widget (li mette nella stessa area con schede)
+    # Tabify the widgets
     viewer.window._qt_window.tabifyDockWidget(datamanager_dock, fusion_dock)
     viewer.window._qt_window.tabifyDockWidget(fusion_dock, umap_dock)
-    # Abilita il text overlay nel viewer
+    # Text overlay in the viewer
     viewer.text_overlay.visible = True
 
-    # Collega l'evento di cambio dimensione al metodo di aggiornamento nel widget
     viewer.dims.events.current_step.connect(datamanager_widget.update_wl)
     viewer.layers.selection.events.active.connect(
         datamanager_widget.on_layer_selected

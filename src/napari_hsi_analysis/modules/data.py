@@ -30,9 +30,7 @@ class Data:
         self.rgb_red = {}  # Dictionary needed for the fusion process
         self.wls_red = {}
         self.pca_maps = {}
-        self.umap_maps = (
-            {}
-        )  # valutare se da togliere. tanto non posso ripescarlo o forse si?
+        self.umap_maps = {}  # valutare se da togliere.
         self.modes = [
             "Reflectance",
             "PL",
@@ -40,7 +38,7 @@ class Data:
             "Reflectance derivative",
             "Fused",
             "-",
-        ]  # per i fused: self.modes.append
+        ]  # fused: self.modes.append
         self.mode = None  # valutare se da togliere con nuovo widget
         self.wl_value = 0
         self.fusion_modes = []
@@ -118,9 +116,9 @@ class Data:
             min_dist=min_dist,
             random_state=42,
         )
-        print(self.umap_maps[mode].shape)
+        # print(self.umap_maps[mode].shape)
 
     def pca_analysis(self, dataset, mode, n_components):
         """ """
         self.pca_maps[mode], W = PCA_analysis(dataset, n_components)
-        print(self.pca_maps[mode].shape)
+        # print(self.pca_maps[mode].shape)

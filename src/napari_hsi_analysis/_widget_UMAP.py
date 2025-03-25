@@ -198,7 +198,7 @@ class UMAPWidget(QWidget):
             if self.reduced_dataset.value
             else self.data.rgb[mode]
         )
-        print(colors.reshape(-1))
+        print("Colors: \n", colors.reshape(-1))
         self.plot_widget.show_scatterplot(
             self.umap_plot, self.umap_data, colors.reshape(-1)
         )
