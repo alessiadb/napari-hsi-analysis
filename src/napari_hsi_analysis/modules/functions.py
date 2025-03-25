@@ -31,6 +31,7 @@ def open_file(filepath):
         "Y",
         "Hyperspectrum_cube",
         "XRFdata",
+        "spectra",
     ]
     wls_names = [
         "WL",
