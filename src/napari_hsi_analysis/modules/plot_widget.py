@@ -273,13 +273,23 @@ class PlotWidget(QWidget):
             plot.getAxis(axis).setPen(None)
         plot.setMinimumSize(300, 400)
 
-    def show_scatterplot(self, plot, data, hex_colors):
+    def show_scatterplot(self, plot, data, hex_colors, points, size):
         """Display sctterplot"""
         if hasattr(self, "scatter") and self.scatter:
             plot.removeItem(self.scatter)
-        self.scatter = pg.ScatterPlotItem(
-            pos=data, pen=None, symbol="o", size=1, brush=hex_colors
-        )
+        if len(points) > 0:
+            self.scatter = pg.ScatterPlotItem(
+                pos=data,
+                pen=None,
+                symbol="o",
+                size=size,
+                brush=hex_colors[points],
+            )
+        else:
+            self.scatter = pg.ScatterPlotItem(
+                pos=data, pen=None, symbol="o", size=size, brush=hex_colors
+            )
+
         plot.addItem(self.scatter)
         plot.getViewBox().autoRange()
         plot.update()
@@ -313,9 +323,7 @@ class PlotWidget(QWidget):
                 self.add_point_to_polygon
             )
 
-    def show_selected_points(
-        self, scatterdata, hsi_image, mode, hex_colors, plot
-    ):
+    def show_selected_points(self, scatterdata, hsi_image, mode, points):
         """ """
         if not self.poly_roi:
             print("No active selection!")
@@ -328,6 +336,9 @@ class PlotWidget(QWidget):
         selected_indices = [
             index for index, value in enumerate(points_mask) if value
         ]
+        if len(points) > 0:
+            selected_indices = points[selected_indices]
+
         # print("Punti selezionati:", selected_points)
         # print("Indici selezionati:", selected_indices)
         # CREATION OF LAYER LABELS

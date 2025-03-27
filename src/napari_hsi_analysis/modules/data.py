@@ -25,9 +25,11 @@ class Data:
         self.filepath = ""
         self.hypercubes = {}
         self.hypercubes_red = {}
+        self.hypercubes_masked = {}
         self.wls = {}
         self.rgb = {}  # Dictionary needed for the fusion process
         self.rgb_red = {}  # Dictionary needed for the fusion process
+        self.rgb_masked = {}
         self.wls_red = {}
         self.pca_maps = {}
         self.umap_maps = {}  # valutare se da togliere.
@@ -59,6 +61,24 @@ class Data:
         self.rgb[mode] = HSI2RGB(
             wl, dataset_reshaped, dataset.shape[0], dataset.shape[1], 65, False
         )
+
+    def create_mask(self, labels_layer_mask, reduced_flag, data_mode):
+        """Create mask"""
+        binary_mask = np.where(labels_layer_mask == 0, np.nan, 1).astype(float)
+        if reduced_flag:
+            self.hypercubes_masked[data_mode] = (
+                self.hypercubes_red[data_mode] * binary_mask[..., np.newaxis]
+            )
+            self.rgb_masked[data_mode] = (
+                self.rgb_red[data_mode] * binary_mask[..., np.newaxis]
+            )
+        else:
+            self.hypercubes_masked[data_mode] = (
+                self.hypercubes[data_mode] * binary_mask[..., np.newaxis]
+            )
+            self.rgb_masked[data_mode] = (
+                self.rgb[data_mode] * binary_mask[..., np.newaxis]
+            )
 
     def processing_data(
         self,
@@ -104,13 +124,21 @@ class Data:
         )
 
     def umap_analysis(
-        self, dataset, mode, downsampling, metric, n_neighbors, min_dist
+        self,
+        dataset,
+        mode,
+        downsampling,
+        metric,
+        n_neighbors,
+        min_dist,
+        points,
     ):
         """ """
+
         self.umap_maps[mode] = UMAP_analysis(
             dataset,
             downsampling=downsampling,
-            points=[],
+            points=points,
             metric=metric,
             n_neighbors=n_neighbors,
             min_dist=min_dist,

@@ -5,6 +5,7 @@ from os.path import dirname
 
 sys.path.append(dirname(dirname(__file__)))
 import napari
+import numpy as np
 import pyqtgraph as pg
 from magicgui.widgets import (
     CheckBox,
@@ -74,12 +75,17 @@ class UMAPWidget(QWidget):
 
         row1 = QHBoxLayout()
         self.reduced_dataset = CheckBox(text="Apply to reduced dataset")
+        self.masked_dataset = CheckBox(text="Apply to masked dataset")
         self.modes_combobox = ComboBox(
             choices=self.data.modes, label="Select the imaging mode"
         )
         row1.addWidget(self.reduced_dataset.native)
         row1.addWidget(self.modes_combobox.native)
         layout.addLayout(row1)
+
+        row2 = QHBoxLayout()
+        row2.addWidget(self.masked_dataset.native)
+        layout.addLayout(row2)
 
         self.downsampling_spinbox = SpinBox(
             min=1, max=6, value=1, step=1, name="Downsampling"
@@ -122,6 +128,7 @@ class UMAPWidget(QWidget):
 
         # Add control buttons for scatter plot interaction
         btn_layout = QHBoxLayout()
+
         for icon, func in [
             ("fa5s.home", lambda: self.umap_plot.getViewBox().autoRange()),
             (
@@ -138,6 +145,11 @@ class UMAPWidget(QWidget):
             btn.clicked.connect(func)
             btn_layout.addWidget(btn)
 
+        self.point_size = SpinBox(
+            min=1, max=100, value=1, step=1, name="Point size"
+        )
+        btn_layout.addSpacing(30)
+        btn_layout.addWidget(Container(widgets=[self.point_size]).native)
         layout.addLayout(btn_layout)
         layout.addWidget(self.umap_plot)
         return layout
@@ -174,11 +186,21 @@ class UMAPWidget(QWidget):
     def run_umap(self):
         """Perform UMAP"""
         mode = self.modes_combobox.value
-        dataset = (
-            self.data.hypercubes_red[mode]
-            if self.reduced_dataset.value
-            else self.data.hypercubes[mode]
-        )
+        if self.masked_dataset.value:
+            dataset = self.data.hypercubes_masked[mode]
+            data_reshaped = dataset.reshape(
+                dataset.shape[0] * dataset.shape[1], -1
+            )
+            self.points = np.array(
+                np.where(~np.isnan(np.mean(data_reshaped, axis=1)))
+            ).flatten()
+        elif self.reduced_dataset.value:
+            dataset = self.data.hypercubes_red[mode]
+            self.points = []
+        else:
+            dataset = self.data.hypercubes[mode]
+            self.points = []
+
         self.data.umap_analysis(
             dataset,
             mode,
@@ -186,6 +208,7 @@ class UMAPWidget(QWidget):
             self.metric_dropdown.value,
             self.n_neighbors_spinbox.value,
             self.min_dist_spinbox.value,
+            self.points,
         )
         show_info("UMAP analysis completed!")
 
@@ -193,32 +216,43 @@ class UMAPWidget(QWidget):
         """Plot UMAP scatter plot"""
         mode = self.modes_combobox.value
         self.umap_data = self.data.umap_maps[mode]
-        colors = RGB_to_hex(
-            self.data.rgb_red[mode]
-            if self.reduced_dataset.value
-            else self.data.rgb[mode]
-        )
+        if self.reduced_dataset.value:
+            colors = RGB_to_hex(self.data.rgb_red[mode])
+        elif self.masked_dataset.value:
+            colors = RGB_to_hex(self.data.rgb_masked[mode])
+        else:
+            colors = RGB_to_hex(self.data.rgb[mode])
+
         print("Colors: \n", colors.reshape(-1))
         self.plot_widget.show_scatterplot(
-            self.umap_plot, self.umap_data, colors.reshape(-1)
+            self.umap_plot,
+            self.umap_data,
+            colors.reshape(-1),
+            self.points,
+            self.point_size.value,
         )
 
     def handle_selection(self):
         """Handle polygon selection and create label layer"""
+        mode = self.modes_combobox.value
+        if self.reduced_dataset.value:
+            dataset = self.data.hypercubes_red[mode]
+            self.points = []
+        elif self.masked_dataset.value:
+            dataset = self.data.hypercubes_masked[mode]
+            data_reshaped = dataset.reshape(
+                dataset.shape[0] * dataset.shape[1], -1
+            )
+            self.points = np.array(
+                np.where(~np.isnan(np.mean(data_reshaped, axis=1)))
+            ).flatten()
+        else:
+            dataset = self.data.hypercubes[mode]
         self.plot_widget.show_selected_points(
             self.umap_data,
-            (
-                self.data.hypercubes_red[self.modes_combobox.value]
-                if self.reduced_dataset.value
-                else self.data.hypercubes[self.modes_combobox.value]
-            ),
-            self.modes_combobox.value,
-            (
-                self.data.rgb_red[self.modes_combobox.value].reshape(-1)
-                if self.reduced_dataset.value
-                else self.data.rgb[self.modes_combobox.value].reshape(-1)
-            ),
-            self.umap_plot,
+            dataset,
+            mode,
+            self.points,
         )
 
     def plot_mean_spectrum(self):

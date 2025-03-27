@@ -5,6 +5,7 @@ from os.path import dirname
 
 sys.path.append(dirname(dirname(__file__)))
 import napari
+import numpy as np
 from magicgui.widgets import (
     CheckBox,
     ComboBox,
@@ -99,6 +100,9 @@ class DataManager(QWidget):
         """Preprocessing of the data"""
         processing_box = QGroupBox("Processing")
         processing_layout = QVBoxLayout()
+        # Crop and mask
+        crop_layout = self.create_crop_section()
+        processing_layout.addLayout(crop_layout)
         # Median filter
         medfilt_layout = self.create_medfilt_section()
         processing_layout.addLayout(medfilt_layout)
@@ -113,6 +117,27 @@ class DataManager(QWidget):
         )
         processing_box.setLayout(processing_layout)
         return processing_box
+
+    def create_crop_section(self):
+        """Crop and create mask"""
+        crop_layout = QHBoxLayout()
+        crop_btn = PushButton(text="Crop")
+        crop_btn.clicked.connect(self.crop_btn_f)
+        crop_layout.addWidget(Container(widgets=[crop_btn]).native)
+        mask_layout = QHBoxLayout()
+        self.mask_reduced_checkbox = CheckBox(text="From reduced dataset")
+        mask_btn = PushButton(text="Create Mask")
+        mask_btn.clicked.connect(self.mask_btn_f)
+        mask_layout.addWidget(
+            Container(
+                widgets=[
+                    self.mask_reduced_checkbox,
+                    mask_btn,
+                ]
+            ).native
+        )
+        crop_layout.addLayout(mask_layout)
+        return crop_layout
 
     def create_medfilt_section(self):
         """Median filter"""
@@ -305,6 +330,7 @@ class DataManager(QWidget):
 
         return channel_layout, min_spinbox, max_spinbox
 
+    # - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     def open_btn_f(self):
         """ """
         self.data.filepath, _ = QFileDialog.getOpenFileName()
@@ -317,6 +343,12 @@ class DataManager(QWidget):
             name=str(data_mode),
             metadata={"type": "hyperspectral_cube"},
         )
+        self.crop_array = [
+            0,
+            0,
+            self.data.hypercubes[data_mode].shape[0],
+            self.data.hypercubes[data_mode].shape[1],
+        ]
 
     def update_wl(self):
         """ """
@@ -363,6 +395,80 @@ class DataManager(QWidget):
             metadata={"type": "hyperspectral_cube"},
         )
         self.data.wls[data_mode + " derivative"] = self.data.wls[data_mode]
+
+    def crop_btn_f(self):
+        data_mode = self.modes_combobox.value
+        shape_layer = next(
+            (
+                rect
+                for rect in self.viewer.layers
+                if isinstance(rect, napari.layers.Shapes)
+            ),
+            None,
+        )
+        if not shape_layer or len(shape_layer.data) == 0:
+            print("Nessuno shape selezionato.")
+            return None
+
+        shape = shape_layer.data[0]
+        min_y = int(np.min(shape[:, 2]))
+        max_y = int(np.max(shape[:, 2]))
+        min_x = int(np.min(shape[:, 1]))
+        max_x = int(np.max(shape[:, 1]))
+        print("Points for cropping: ", min_x, min_y, max_x, max_y)
+        self.crop_array = [min_x, min_y, max_x, max_y]
+
+        # Crop del cubo (preserva tutte le bande spettrali)
+        self.data.hypercubes[data_mode] = self.data.hypercubes[data_mode][
+            min_x:max_x, min_y:max_y, :
+        ]
+        print(f"Cropped shape: {self.data.hypercubes[data_mode].shape}")
+        self.viewer.add_image(
+            self.data.hypercubes[data_mode].transpose(2, 0, 1),
+            name=str(data_mode) + " cropped",
+            metadata={"type": "cropped_hsi_cube"},
+        )
+
+    def mask_btn_f(self):
+        """ """
+        data_mode = self.modes_combobox.value
+        # SELECT LABEL LAYER
+        # takes all the layers but the seleciton is only in the image (WL) in which i've done it
+        labels_layer = self.viewer.layers.selection.active.data
+        # If coming from UMAP, we don't need to do np.sum
+        labels_layer_mask = (
+            labels_layer
+            if "SCATTERPLOT"
+            in self.viewer.layers.selection.active.name.upper()
+            else np.sum(labels_layer, axis=0)
+        )
+        if self.mask_reduced_checkbox.value:
+            self.crop_array = [
+                0,
+                0,
+                self.data.hypercubes_red[data_mode].shape[0],
+                self.data.hypercubes_red[data_mode].shape[1],
+            ]
+        print(labels_layer_mask, labels_layer_mask.shape)
+        labels_layer_mask = labels_layer_mask[
+            : self.crop_array[2] - self.crop_array[0],
+            : self.crop_array[3] - self.crop_array[1],
+        ]
+        print(labels_layer_mask, labels_layer_mask.shape)
+        self.data.create_mask(
+            labels_layer_mask, self.mask_reduced_checkbox.value, data_mode
+        )
+        self.viewer.add_image(
+            self.data.hypercubes_masked[data_mode].transpose(2, 0, 1),
+            name=str(data_mode) + " masked",
+            metadata={"type": "masked_hsi_cube"},
+        )
+
+        self.viewer.add_image(
+            self.data.rgb_masked[data_mode],
+            name=str(data_mode) + " masked - RGB",
+            metadata={"type": "masked_rgb"},
+        )
 
     def preprocessing_btn_f(self):
         """ """
@@ -445,3 +551,12 @@ class DataManager(QWidget):
         elif selected_layer.metadata.get("type") == "reduced_rgb":
             print(selected_layer.name[:-14])
             self.modes_combobox.value = selected_layer.name[:-14]
+        elif selected_layer.metadata.get("type") == "cropped_hsi_cube":
+            print(selected_layer.name[:-8])
+            self.modes_combobox.value = selected_layer.name[:-8]
+        elif selected_layer.metadata.get("type") == "masked_hsi_cube":
+            print(selected_layer.name[:-7])
+            self.modes_combobox.value = selected_layer.name[:-7]
+        elif selected_layer.metadata.get("type") == "masked_rgb":
+            print(selected_layer.name[:-13])
+            self.modes_combobox.value = selected_layer.name[:-13]
