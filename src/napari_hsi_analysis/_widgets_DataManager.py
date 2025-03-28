@@ -320,12 +320,15 @@ class DataManager(QWidget):
         channel_layout = QHBoxLayout()
         label = Label(value=label_name)
         label.native.setFixedWidth(20)
+        channel_layout.addSpacing(50)
         channel_layout.addWidget(label.native)
         min_spinbox = SpinBox(
             min=0, max=2500, step=1, value=value[0], label=label_name
         )
         max_spinbox = SpinBox(min=0, max=2500, step=1, value=value[1])
+        channel_layout.addSpacing(50)
         channel_layout.addWidget(min_spinbox.native)
+        channel_layout.addSpacing(50)
         channel_layout.addWidget(max_spinbox.native)
 
         return channel_layout, min_spinbox, max_spinbox

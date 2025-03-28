@@ -25,13 +25,24 @@ class PlotWidget(QWidget):
 
     def setup_plot(self, plot, fused=False):
         """Configure setup aspect"""
+        self.ax = self.ax2 = self.ax3 = None  # Reset of the axis
         plot.figure.patch.set_facecolor("#262930")
         if fused:
-            self.ax = plot.figure.add_subplot(121)
-            self.ax2 = plot.figure.add_subplot(122)
+            if len(self.data.fusion_modes) > 2:
+                self.ax = plot.figure.add_subplot(131)
+                self.ax2 = plot.figure.add_subplot(132)
+                self.ax3 = plot.figure.add_subplot(133)
+            else:
+                self.ax = plot.figure.add_subplot(121)
+                self.ax2 = plot.figure.add_subplot(122)
+
         else:
             self.ax = plot.figure.add_subplot(111)
-        for ax in [self.ax, getattr(self, "ax2", None)]:
+        for ax in [
+            self.ax,
+            getattr(self, "ax2", None),
+            getattr(self, "ax3", None),
+        ]:
             if ax is not None:
                 ax.set_facecolor("#262930")
                 ax.tick_params(axis="x", colors="#D3D4D5", labelsize=14)
@@ -158,7 +169,7 @@ class PlotWidget(QWidget):
 
             # Handle Fused outside
             if mode == "Fused":
-                mode1, mode2 = self.data.fusion_modes
+                mode1, mode2 = self.data.fusion_modes[:2]
                 cube = (
                     self.data.hypercubes_red
                     if reduced_flag
@@ -167,6 +178,12 @@ class PlotWidget(QWidget):
                 data1 = cube[mode1][points[0], points[1], :]
                 data2 = cube[mode2][points[0], points[1], :]
                 data_selected = np.concatenate((data1, data2), axis=1)
+                if len(self.data.fusion_modes) > 2:
+                    mode3 = self.data.fusion_modes[2]
+                    data3 = cube[mode3][points[0], points[1], :]
+                    data_selected = np.concatenate(
+                        (data_selected, data3), axis=1
+                    )
             else:
                 cube = (
                     self.data.hypercubes_red
@@ -217,6 +234,18 @@ class PlotWidget(QWidget):
         wls_1 = self.data.wls[self.data.fusion_modes[0]]
         wls_2 = self.data.wls[self.data.fusion_modes[1]]
 
+        if len(self.data.fusion_modes) > 2:
+            fusion_point2 = (
+                self.data.wls[self.data.fusion_modes[0]].shape[0]
+                + self.data.wls[self.data.fusion_modes[1]].shape[0]
+            )
+            spectrum_2 = spectra[index, fusion_point:fusion_point2]
+            spectrum_3 = spectra[index, fusion_point2:]
+            std_dev_2 = stds[index, fusion_point:fusion_point2]
+            std_dev_3 = stds[index, :fusion_point2]
+            wls_3 = self.data.wls[self.data.fusion_modes[2]]
+            self.ax3.plot(wls_3, spectrum_3, color=color, linewidth=2)
+
         self.ax.plot(wls_1, spectrum_1, color=color, linewidth=2)
         self.ax2.plot(wls_2, spectrum_2, color=color, linewidth=2)
 
@@ -235,6 +264,14 @@ class PlotWidget(QWidget):
                 color=color,
                 alpha=0.3,
             )
+            if len(self.data.fusion_modes) > 2:
+                self.ax3.fill_between(
+                    wls_3,
+                    spectrum_3 - std_dev_3,
+                    spectrum_3 + std_dev_3,
+                    color=color,
+                    alpha=0.3,
+                )
 
     def export_spectra_txt(self, filename, wavelengths, spectra, stds):
         """Export spectra and standard deviation to TXT."""
