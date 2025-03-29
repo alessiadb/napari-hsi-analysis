@@ -506,6 +506,7 @@ class DataManager(QWidget):
             spatial_dimred_checkbox,
             self.data.wls[data_mode],
         )
+
         # print(self.data.hypercubes_red[data_mode].shape)
         self.viewer.add_image(
             self.data.hypercubes_red[data_mode].transpose(2, 0, 1),

@@ -12,6 +12,7 @@ from modules.functions import (
     dimensionality_reduction,
     open_file,
     preprocessing,
+    reduce_spatial_dimension_dwt,
 )
 
 # print("here: ", dirname(dirname(__file__)))    #print for the directory folder
@@ -25,6 +26,7 @@ class Data:
         self.filepath = ""
         self.hypercubes = {}
         self.hypercubes_red = {}
+        self.hypercubes_spatial_red = {}  # For the spectra
         self.hypercubes_masked = {}
         self.wls = {}
         self.rgb = {}  # Dictionary needed for the fusion process
@@ -122,6 +124,10 @@ class Data:
         print(
             f"New rgb matrix of reduced dataset. Dimensions: {self.rgb_red[mode].shape}"
         )
+        if spatial_dimred_checkbox:
+            self.hypercubes_spatial_red[mode] = reduce_spatial_dimension_dwt(
+                dataset
+            )
 
     def umap_analysis(
         self,

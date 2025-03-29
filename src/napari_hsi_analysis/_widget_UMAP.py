@@ -257,6 +257,7 @@ class UMAPWidget(QWidget):
 
     def plot_mean_spectrum(self):
         """Plot the mean spectrum of the selected area"""
+
         self.plot_widget.show_plot(
             self.mean_plot,
             mode=self.modes_combobox.value,

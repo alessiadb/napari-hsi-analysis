@@ -370,11 +370,12 @@ def dimensionality_reduction(
     reduced_data = data
     if spatial_dimred_checkbox:
         reduced_data = reduce_spatial_dimension_dwt(reduced_data)
+        reduced_data = reduced_data / 2
         dataset_reshaped = (
             np.reshape(reduced_data, [-1, reduced_data.shape[2]])
             / reduced_data.max()
         )
-        reduced_data = reduced_data / 2
+
         reduced_rgb = HSI2RGB(
             wl,
             dataset_reshaped,

@@ -170,11 +170,14 @@ class PlotWidget(QWidget):
             # Handle Fused outside
             if mode == "Fused":
                 mode1, mode2 = self.data.fusion_modes[:2]
-                cube = (
-                    self.data.hypercubes_red
-                    if reduced_flag
-                    else self.data.hypercubes
-                )
+                if reduced_flag:
+                    if self.data.hypercubes_spatial_red["Fused"] is not None:
+                        cube = self.data.hypercubes_spatial_red
+                    else:
+                        cube = self.data.hypercubes_red
+                else:
+                    cube = self.data.hypercubes
+
                 data1 = cube[mode1][points[0], points[1], :]
                 data2 = cube[mode2][points[0], points[1], :]
                 data_selected = np.concatenate((data1, data2), axis=1)
@@ -185,30 +188,71 @@ class PlotWidget(QWidget):
                         (data_selected, data3), axis=1
                     )
             else:
-                cube = (
-                    self.data.hypercubes_red
-                    if reduced_flag
-                    else self.data.hypercubes
-                )
+                if reduced_flag:
+                    if self.data.hypercubes_spatial_red.get(mode) is not None:
+                        cube = self.data.hypercubes_spatial_red
+                    else:
+                        cube = self.data.hypercubes_red
+                else:
+                    cube = self.data.hypercubes
                 data_selected = cube[mode][points[0], points[1], :]
 
             mean_spec = np.mean(data_selected, axis=0)
             std_spec = np.std(data_selected, axis=0)
 
             if normalize_flag:
-                min_val, max_val = np.min(mean_spec), np.max(mean_spec)
-                mean_spec = (mean_spec - min_val) / (max_val - min_val)
-                std_spec = std_spec / (max_val - min_val)
+                if mode == "Fused":
+                    mean_spec1 = np.mean(data1, axis=0)
+                    min_val1, max_val1 = np.min(mean_spec1), np.max(mean_spec1)
+                    mean_spec1 = (mean_spec1 - min_val1) / (
+                        max_val1 - min_val1
+                    )
+                    std_spec1 = np.std(data1, axis=0) / (max_val1 - min_val1)
+
+                    mean_spec2 = np.mean(data2, axis=0)
+                    min_val2, max_val2 = np.min(mean_spec2), np.max(mean_spec2)
+                    mean_spec2 = (mean_spec2 - min_val2) / (
+                        max_val2 - min_val2
+                    )
+                    std_spec2 = np.std(data2, axis=0) / (max_val2 - min_val2)
+
+                    mean_spec = np.concatenate((mean_spec1, mean_spec2))
+                    std_spec = np.concatenate((std_spec1, std_spec2))
+
+                    if len(self.data.fusion_modes) > 2:
+                        mean_spec3 = np.mean(data3, axis=0)
+                        min_val3, max_val3 = np.min(mean_spec3), np.max(
+                            mean_spec3
+                        )
+                        mean_spec3 = (mean_spec3 - min_val3) / (
+                            max_val3 - min_val3
+                        )
+                        std_spec3 = np.std(data3, axis=0) / (
+                            max_val3 - min_val3
+                        )
+
+                        mean_spec = np.concatenate((mean_spec, mean_spec3))
+                        std_spec = np.concatenate((std_spec, std_spec3))
+
+                else:
+                    min_val, max_val = np.min(mean_spec), np.max(mean_spec)
+                    mean_spec = (mean_spec - min_val) / (max_val - min_val)
+                    std_spec = std_spec / (max_val - min_val)
 
             spectra[idx] = mean_spec
             stds[idx] = std_spec
 
             if derivative_flag:
-                cube_der = (
-                    self.data.hypercubes_red
-                    if reduced_flag
-                    else self.data.hypercubes
-                )
+                if reduced_flag:
+                    if (
+                        self.data.hypercubes_spatial_red[mode + " derivative"]
+                        is not None
+                    ):
+                        cube_der = self.data.hypercubes_spatial_red
+                    else:
+                        cube_der = self.data.hypercubes_red
+                else:
+                    cube_der = self.data.hypercubes
                 data_der = cube_der[mode + " derivative"][
                     points[0], points[1], :
                 ]
@@ -242,7 +286,7 @@ class PlotWidget(QWidget):
             spectrum_2 = spectra[index, fusion_point:fusion_point2]
             spectrum_3 = spectra[index, fusion_point2:]
             std_dev_2 = stds[index, fusion_point:fusion_point2]
-            std_dev_3 = stds[index, :fusion_point2]
+            std_dev_3 = stds[index, fusion_point2:]
             wls_3 = self.data.wls[self.data.fusion_modes[2]]
             self.ax3.plot(wls_3, spectrum_3, color=color, linewidth=2)
 
@@ -458,3 +502,9 @@ class PlotWidget(QWidget):
         #    wl_selected = self.data.wls
         #    viewer.text_overlay.text = f"Wavelength: {round(wl_selected[self.data.mode][self.data.wl_value], 2)} nm"
         print(self.data.wls[self.data.mode][self.data.wl_value])
+
+    def normalize(channel):
+        """ """
+        return (channel - np.min(channel)) / (
+            np.max(channel) - np.min(channel)
+        )

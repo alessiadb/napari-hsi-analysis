@@ -108,8 +108,30 @@ class FusionWidget(QWidget):
             self.data.fusion_modes.append(self.modes_combobox_3.value)
             wl3 = self.data.wls[self.modes_combobox_1.value]
         if self.reduced_dataset_checkbox.value:
-            dataset1 = self.data.hypercubes_red[self.modes_combobox_1.value]
-            dataset2 = self.data.hypercubes_red[self.modes_combobox_2.value]
+            if (
+                self.data.hypercubes_spatial_red.get(
+                    self.modes_combobox_1.value
+                )
+                is not None
+                and self.data.hypercubes_spatial_red.get(
+                    self.modes_combobox_2.value
+                )
+                is not None
+            ):
+                dataset1 = self.data.hypercubes_spatial_red[
+                    self.modes_combobox_1.value
+                ]
+                dataset2 = self.data.hypercubes_spatial_red[
+                    self.modes_combobox_2.value
+                ]
+            else:
+                dataset1 = self.data.hypercubes_red[
+                    self.modes_combobox_1.value
+                ]
+                dataset2 = self.data.hypercubes_red[
+                    self.modes_combobox_2.value
+                ]
+
             self.data.rgb_red["Fused"] = self.data.rgb_red[
                 self.modes_combobox_1.value
             ]
@@ -118,9 +140,19 @@ class FusionWidget(QWidget):
             )
 
             if self.modes_combobox_3.value != "-":
-                dataset3 = self.data.hypercubes_red[
-                    self.modes_combobox_3.value
-                ]
+                if (
+                    self.data.hypercubes_spatial_red.get(
+                        self.modes_combobox3.value
+                    )
+                    is not None
+                ):
+                    dataset3 = self.data.hypercubes_spatial_red[
+                        self.modes_combobox_3.value
+                    ]
+                else:
+                    dataset3 = self.data.hypercubes_red[
+                        self.modes_combobox_3.value
+                    ]
                 self.data.hypercubes_red["Fused"], self.data.wls["Fused"] = (
                     datasets_fusion(
                         self.data.hypercubes_red["Fused"],
@@ -133,7 +165,21 @@ class FusionWidget(QWidget):
         else:
             dataset1 = self.data.hypercubes[self.modes_combobox_1.value]
             dataset2 = self.data.hypercubes[self.modes_combobox_2.value]
-            self.data.rgb["Fused"] = self.data.rgb[self.modes_combobox_1.value]
+            if self.data.rgb.get(self.modes_combobox_1.value) is not None:
+                self.data.rgb["Fused"] = self.data.rgb[
+                    self.modes_combobox_1.value
+                ]
+            else:
+                self.data.create_rgb_image(
+                    self.data.hypercubes[self.modes_combobox_1.value],
+                    self.data.wls[self.modes_combobox_1.value],
+                    self.modes_combobox_1.value,
+                )
+                self.viewer.add_image(
+                    self.data.rgb[self.modes_combobox_1.value],
+                    name=str(self.modes_combobox_1.value) + " RGB",
+                    metadata={"type": "rgb"},
+                )
             self.data.hypercubes["Fused"], self.data.wls["Fused"] = (
                 datasets_fusion(dataset1, dataset2, wl1, wl2)
             )
