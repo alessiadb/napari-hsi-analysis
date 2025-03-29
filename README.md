@@ -25,13 +25,13 @@ https://napari.org/stable/plugins/index.html
 
 You can install `napari-hsi-analysis` via [pip]:
 
-    pip install napari-hsi-analysis
+    <!--pip install napari-hsi-analysis-->
 
 
 
 To install latest development version :
 
-    pip install git+https://github.com/alessiadb/napari-hsi-analysis.git
+    <!--pip install git+https://github.com/alessiadb/napari-hsi-analysis.git-->
 
 
 ## Contributing
