@@ -501,7 +501,7 @@ class PlotWidget(QWidget):
         # else:
         #    wl_selected = self.data.wls
         #    viewer.text_overlay.text = f"Wavelength: {round(wl_selected[self.data.mode][self.data.wl_value], 2)} nm"
-        print(self.data.wls[self.data.mode][self.data.wl_value])
+        # print(self.data.wls[self.data.mode][self.data.wl_value])
 
     def normalize(channel):
         """ """
