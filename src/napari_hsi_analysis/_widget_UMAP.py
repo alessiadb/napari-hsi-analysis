@@ -275,7 +275,7 @@ class UMAPWidget(QWidget):
             mode=self.modes_combobox.value,
             std_dev_flag=self.std_checkbox.value,
             norm_flag=self.norm_checkbox.value,
-            reduced_dataset=self.reduced_dataset.value,
+            reduced_dataset_flag=self.reduced_dataset.value,
             export_txt=True,
             from_scatterplot=True,
         )
