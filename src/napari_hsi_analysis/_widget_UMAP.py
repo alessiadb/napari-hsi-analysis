@@ -94,7 +94,7 @@ class UMAPWidget(QWidget):
             choices=["euclidean", "cosine"], label="Select the imaging mode"
         )
         self.n_neighbors_spinbox = SpinBox(
-            min=5, max=500, value=20, step=5, name="N Neighbors"
+            min=5, max=500, value=20, step=5, name="N Neighbours"
         )
         self.min_dist_spinbox = SpinBox(
             min=0.0, max=1.0, value=0.0, step=0.1, name="Min dist"
