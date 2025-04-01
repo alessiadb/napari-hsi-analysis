@@ -17,6 +17,9 @@ from magicgui.widgets import (
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
+from matplotlib.backends.backend_qt5agg import (
+    NavigationToolbar2QT as NavigationToolbar,
+)
 from matplotlib.figure import Figure
 from napari.utils.notifications import show_info
 from qtpy.QtWidgets import (
@@ -220,7 +223,11 @@ class DataManager(QWidget):
         meanspec_layout_plot = QVBoxLayout()
 
         self.meanspec_plot = FigureCanvas(Figure(figsize=(5, 3)))
-        self.meanspec_plot.setMinimumSize(300, 400)
+        self.meanspec_plot.setMinimumSize(300, 450)
+        self.meanspec_plot_toolbar = NavigationToolbar(
+            self.meanspec_plot, self
+        )
+        self.plot_widget.customize_toolbar(self.meanspec_plot_toolbar)
         self.plot_widget.setup_plot(self.meanspec_plot)
 
         plot_btn = PushButton(text="Mean spectrum")
@@ -252,6 +259,7 @@ class DataManager(QWidget):
             ).native
         )
         meanspec_layout_plot.addWidget(self.meanspec_plot)
+        meanspec_layout_plot.addWidget(self.meanspec_plot_toolbar)
 
         return meanspec_layout_plot
 

@@ -17,6 +17,9 @@ from magicgui.widgets import (
 from matplotlib.backends.backend_qt5agg import (
     FigureCanvasQTAgg as FigureCanvas,
 )
+from matplotlib.backends.backend_qt5agg import (
+    NavigationToolbar2QT as NavigationToolbar,
+)
 from matplotlib.figure import Figure
 from napari.utils.notifications import show_info
 from qtpy.QtWidgets import (
@@ -158,7 +161,9 @@ class UMAPWidget(QWidget):
         """ """
         layout = QVBoxLayout()
         self.mean_plot = FigureCanvas(Figure(figsize=(5, 3)))
-        self.mean_plot.setMinimumSize(300, 400)
+        self.mean_plot.setMinimumSize(300, 450)
+        self.mean_plot_toolbar = NavigationToolbar(self.mean_plot, self)
+        self.plot_widget.customize_toolbar(self.mean_plot_toolbar)
         self.plot_widget.setup_plot(self.mean_plot)
 
         mean_btn = PushButton(text="Mean Spectrum")
@@ -176,6 +181,7 @@ class UMAPWidget(QWidget):
         ]
         layout.addWidget(Container(widgets=controls).native)
         layout.addWidget(self.mean_plot)
+        layout.addWidget(self.mean_plot_toolbar)
 
         # Export button
         export_btn = PushButton(text="Export spectra as .txt")

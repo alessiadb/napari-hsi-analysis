@@ -7,6 +7,7 @@ import pyqtgraph.exporters
 import qtawesome as qta  # Icons
 from magicgui.widgets import PushButton
 from matplotlib.path import Path
+from napari.utils.notifications import show_warning
 from qtpy import QtCore
 from qtpy.QtWidgets import QFileDialog, QWidget
 
@@ -25,7 +26,6 @@ class PlotWidget(QWidget):
         self.viewer.dims.events.current_step.connect(self.update_line)
 
     def setup_plot(self, plot, fused=False):
-        """Configure setup aspect"""
         self.ax = self.ax2 = self.ax3 = None  # Reset of the axis
         plot.figure.patch.set_facecolor("#262930")
         if fused:
@@ -55,8 +55,15 @@ class PlotWidget(QWidget):
                     color="#D3D4D5",
                     alpha=0.5,
                 )
-                for spine in self.ax.spines.values():
-                    spine.set_color("#D3D4D5")
+                for position, spine in ax.spines.items():
+                    if position in ["left", "bottom"]:
+                        spine.set_color(
+                            "#D3D4D5"
+                        )  # colore chiaro per sfondo scuro
+                        spine.set_linewidth(1)
+                        spine.set_visible(True)
+                    else:
+                        spine.set_visible(False)
 
     def show_plot(
         self,
@@ -69,7 +76,14 @@ class PlotWidget(QWidget):
         export_txt_flag=False,
         derivative_flag=False,
     ):
-        """Create spectrum plot"""
+
+        selected_layer = self.viewer.layers.selection.active
+
+        if not isinstance(selected_layer, napari.layers.Labels):
+            show_warning(
+                "⚠️ The selected layer is not a label layer. Please, select a label layer."
+            )
+            return
 
         # Clean and reset the plot
         fig = plot.figure
@@ -551,3 +565,25 @@ class PlotWidget(QWidget):
         return (channel - np.min(channel)) / (
             np.max(channel) - np.min(channel)
         )
+
+    def customize_toolbar(self, toolbar):
+        """Personalizza la toolbar matplotlib: sfondo scuro + icone bianche"""
+        # Cambia sfondo della toolbar
+        toolbar.setStyleSheet("background-color: #262930; border: none;")
+
+        # Mappa nome azione → nome file icona
+        icon_map = {
+            "Home": "fa5s.home",
+            "Back": "fa5s.arrow-left",
+            "Forward": "fa5s.arrow-right",
+            "Pan": "fa5s.expand-arrows-alt",
+            "Zoom": "ei.zoom-in",
+            "Subplots": "msc.settings",
+            "Customize": "mdi.chart-scatter-plot",
+            "Save": "fa5.save",
+        }
+
+        for action in toolbar.actions():
+            text = action.text()
+            if text in icon_map:
+                action.setIcon(qta.icon(f"{icon_map[text]}", color="#D3D4D5"))
