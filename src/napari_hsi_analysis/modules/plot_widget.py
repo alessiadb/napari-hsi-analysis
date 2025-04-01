@@ -7,6 +7,7 @@ import pyqtgraph.exporters
 import qtawesome as qta  # Icons
 from magicgui.widgets import PushButton
 from matplotlib.path import Path
+from qtpy import QtCore
 from qtpy.QtWidgets import QFileDialog, QWidget
 
 
@@ -376,7 +377,49 @@ class PlotWidget(QWidget):
         plot.update()
 
     def polygon_selection(self, plot):
-        """Enable polygon selection on the scatterplot"""
+        """Abilita la selezione poligonale sullo scatterplot"""
+        self.plot = plot
+
+        # Rimuove ROI esistente se presente
+        if self.poly_roi:
+            self.plot.removeItem(self.poly_roi)
+
+        self.temp_points = []
+        self.poly_roi = pg.PolyLineROI(
+            [],
+            closed=False,
+            pen="r",
+            handlePen=pg.mkPen("red"),
+        )
+        self.plot.addItem(self.poly_roi)
+
+        self.drawing = True
+        self.plot.scene().sigMouseClicked.connect(self.add_point_to_polygon)
+
+    def add_point_to_polygon(self, event):
+        """Aggiunge punti alla ROI poligonale e aggiorna le linee"""
+        if not self.drawing:
+            return
+
+        if event.button() == QtCore.Qt.LeftButton:
+            pos = self.plot.plotItem.vb.mapSceneToView(event.scenePos())
+            point = (pos.x(), pos.y())
+
+            self.temp_points.append(point)
+            self.poly_roi.setPoints(self.temp_points)  # aggiorna visivamente
+
+            if event.double():  # chiusura con doppio click
+                self.drawing = False
+                self.poly_roi.closed = True
+                self.poly_roi.setPoints(
+                    self.temp_points
+                )  # richiude visivamente
+                self.plot.scene().sigMouseClicked.disconnect(
+                    self.add_point_to_polygon
+                )
+
+    """
+    def polygon_selection(self, plot):
         self.plot = plot
         if self.poly_roi:  # If polyroi selected, cancel it
             self.plot.removeItem(self.poly_roi)
@@ -391,7 +434,6 @@ class PlotWidget(QWidget):
         self.plot.scene().sigMouseClicked.connect(self.add_point_to_polygon)
 
     def add_point_to_polygon(self, event):
-        """Add points from the polygon ROI"""
         if not self.drawing:
             return
         pos = self.plot.plotItem.vb.mapSceneToView(event.scenePos())
@@ -403,6 +445,7 @@ class PlotWidget(QWidget):
             self.plot.scene().sigMouseClicked.disconnect(
                 self.add_point_to_polygon
             )
+    """
 
     def show_selected_points(self, scatterdata, hsi_image, mode, points):
         """ """
