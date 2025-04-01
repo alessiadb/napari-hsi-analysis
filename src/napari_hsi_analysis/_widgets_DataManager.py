@@ -266,6 +266,7 @@ class DataManager(QWidget):
                 mode=self.modes_combobox.value,
                 std_dev_flag=self.std_plot_checkbox.value,
                 norm_flag=self.norm_plot_checkbox.value,
+                reduced_dataset_flag=self.dimred_checkbox.value,
                 export_txt_flag=True,
             )
         )

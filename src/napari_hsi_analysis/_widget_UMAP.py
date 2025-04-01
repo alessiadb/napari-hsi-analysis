@@ -277,5 +277,5 @@ class UMAPWidget(QWidget):
             norm_flag=self.norm_checkbox.value,
             reduced_dataset_flag=self.reduced_dataset.value,
             export_txt_flag=True,
-            from_scatterplot=True,
+            from_scatterplot_flag=True,
         )
