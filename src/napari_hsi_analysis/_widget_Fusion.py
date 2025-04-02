@@ -142,7 +142,7 @@ class FusionWidget(QWidget):
             if self.modes_combobox_3.value != "-":
                 if (
                     self.data.hypercubes_spatial_red.get(
-                        self.modes_combobox3.value
+                        self.modes_combobox_3.value
                     )
                     is not None
                 ):

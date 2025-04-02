@@ -11,6 +11,7 @@ from magicgui.widgets import (
     CheckBox,
     ComboBox,
     Container,
+    FloatSpinBox,
     PushButton,
     SpinBox,
 )
@@ -99,7 +100,7 @@ class UMAPWidget(QWidget):
         self.n_neighbors_spinbox = SpinBox(
             min=5, max=500, value=20, step=5, name="N Neighbours"
         )
-        self.min_dist_spinbox = SpinBox(
+        self.min_dist_spinbox = FloatSpinBox(
             min=0.0, max=1.0, value=0.0, step=0.1, name="Min dist"
         )
         layout.addWidget(

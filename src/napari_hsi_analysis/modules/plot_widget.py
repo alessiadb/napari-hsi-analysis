@@ -367,7 +367,7 @@ class PlotWidget(QWidget):
             plot.getAxis(axis).setTicks([])
             plot.getAxis(axis).setStyle(tickLength=0)
             plot.getAxis(axis).setPen(None)
-        plot.setMinimumSize(300, 400)
+        plot.setMinimumSize(400, 400)
 
     def show_scatterplot(self, plot, data, hex_colors, points, size):
         """Display sctterplot"""
