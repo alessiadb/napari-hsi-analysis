@@ -9,6 +9,7 @@ sys.path.append(dirname(dirname(__file__)))
 # print("here: ", dirname(dirname(__file__)))
 
 from napari_hsi_analysis._widget_Fusion import FusionWidget
+from napari_hsi_analysis._widget_Label import LabelWidget
 from napari_hsi_analysis._widget_UMAP import UMAPWidget
 from napari_hsi_analysis._widgets_DataManager import DataManager
 from napari_hsi_analysis.modules.data import Data
@@ -32,6 +33,9 @@ class NapariApp:
         self.fusion_widget = FusionWidget(self.viewer, self.data)
         self.umap_widget = UMAPWidget(
             self.viewer, self.data, self.plot_widget_umap
+        )
+        self.label_widget = LabelWidget(
+            self.viewer, self.data, self.datamanager_widget
         )
 
         self.setup_dock_widgets()
@@ -57,10 +61,14 @@ class NapariApp:
         fusion_dock = self.viewer.window.add_dock_widget(
             self.fusion_widget, name="Fusion", area="right"
         )
+        label_dock = self.viewer.window.add_dock_widget(
+            self.label_widget, name="Labeling", area="right"
+        )
         self.viewer.window._qt_window.tabifyDockWidget(
             datamanager_dock, fusion_dock
         )
         self.viewer.window._qt_window.tabifyDockWidget(fusion_dock, umap_dock)
+        self.viewer.window._qt_window.tabifyDockWidget(umap_dock, label_dock)
 
     def setup_connections(self):
         """ """

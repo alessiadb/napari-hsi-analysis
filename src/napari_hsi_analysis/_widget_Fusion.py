@@ -67,6 +67,11 @@ class FusionWidget(QWidget):
         self.reduced_dataset_checkbox = CheckBox(
             text="Fuse the reduced dataset (Only if you have both reduced datasets)"
         )
+
+        self.modes_fusion = ComboBox(
+            choices=["l2", "std"], label="Select fusion modality"
+        )
+
         self.modes_combobox_1 = ComboBox(
             choices=self.data.modes, label="Select the first dataset"
         )
@@ -88,6 +93,7 @@ class FusionWidget(QWidget):
             Container(
                 widgets=[
                     self.reduced_dataset_checkbox,
+                    self.modes_fusion,
                     self.modes_combobox_1,
                     self.modes_combobox_2,
                     self.modes_combobox_3,
@@ -136,7 +142,9 @@ class FusionWidget(QWidget):
                 self.modes_combobox_1.value
             ]
             self.data.hypercubes_red["Fused"], self.data.wls["Fused"] = (
-                datasets_fusion(dataset1, dataset2, wl1, wl2)
+                datasets_fusion(
+                    dataset1, dataset2, wl1, wl2, norm=self.modes_fusion.value
+                )
             )
 
             if self.modes_combobox_3.value != "-":
@@ -159,6 +167,7 @@ class FusionWidget(QWidget):
                         dataset3,
                         self.data.wls["Fused"],
                         wl3,
+                        norm=self.modes_fusion.value,
                     )
                 )
 
@@ -181,7 +190,9 @@ class FusionWidget(QWidget):
                     metadata={"type": "rgb"},
                 )
             self.data.hypercubes["Fused"], self.data.wls["Fused"] = (
-                datasets_fusion(dataset1, dataset2, wl1, wl2)
+                datasets_fusion(
+                    dataset1, dataset2, wl1, wl2, norm=self.modes_fusion.value
+                )
             )
 
             if self.modes_combobox_3.value != "-":
@@ -192,6 +203,7 @@ class FusionWidget(QWidget):
                         dataset3,
                         self.data.wls["Fused"],
                         wl3,
+                        norm=self.modes_fusion.value,
                     )
                 )
 

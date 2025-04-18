@@ -32,6 +32,7 @@ def open_file(filepath):
         "Hyperspectrum_cube",
         "XRFdata",
         "spectra",
+        "HyperMatrix",
     ]
     wls_names = [
         "WL",
@@ -41,6 +42,7 @@ def open_file(filepath):
         "spectra",
         "wavelength",
         "ENERGY",
+        "t",
     ]
 
     data = None
@@ -427,6 +429,20 @@ def datasets_fusion(data1, data2, wl1, wl2, norm="l2"):
         )
         data1_reshaped = data1_reshaped / corr1
         data2_reshaped = data2_reshaped / corr2
+
+    if norm == "std":
+        # scaler1 = StandardScaler()
+        # scaler2 = StandardScaler()
+        # data1_reshaped = scaler1.fit_transform(data1_reshaped)
+        # data2_reshaped = scaler2.fit_transform(data2_reshaped)
+        data1_reshaped = (data1_reshaped - np.mean(data1_reshaped)) / np.std(
+            data1_reshaped
+        )
+        data2_reshaped = (data2_reshaped - np.mean(data2_reshaped)) / np.std(
+            data2_reshaped
+        )
+        print(np.mean(data1_reshaped).shape)
+
     data1 = data1_reshaped.reshape(data1.shape[0], data1.shape[1], -1)
     data2 = data2_reshaped.reshape(data2.shape[0], data2.shape[1], -1)
 
