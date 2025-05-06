@@ -31,7 +31,6 @@ The accepted variables names are:
 4. (Optional) Delete the original layer.
 **TIP**: Keep the cropping *Shapes* layer if fusing multiple datasets and reuse the same shape on a second registered dataset for identical cropping.
 
-![raw](https://github.com/alessiadb/napari-hsi-analysis/blob/main/images/CropHSI_2_GIF.gif)
 
 ### Create a mask
 1. Select the *Labels* layer.
@@ -39,7 +38,6 @@ The accepted variables names are:
 3. Click *Create Mask*.
 **Note**: If you are working on a reduced dataset,enable *From reduced dataset*.
 
-![raw](https://github.com/alessiadb/napari-hsi-analysis/blob/main/images/CreateMask_GIF.gif)
 
 ### Plot the mean spectrum
 1. Select or create a Labels layer.
@@ -47,15 +45,12 @@ The accepted variables names are:
 3. Click *Mean spectrum*.
 It is possible to select other options: with standard deviation, normalized, derivative (if previously computed).
 Enable *Reduced dataset* if working on reduced data.
-
 ![raw](https://github.com/alessiadb/napari-hsi-analysis/blob/main/images/MeanSpectrum_GIF.gif)
 
 You can also export spectra as '.txt' using *Export spectra in .txt*.
 
 ### Create false RGB
 Choose three bands and click *Create False RGB* to generate a false-color image.
-
-![raw](https://github.com/alessiadb/napari-hsi-analysis/blob/main/images/FalseRGB_GIF.gif)
 
 
 ## Fusion widget
@@ -80,11 +75,7 @@ The Fusion widget combines two or three opened datasets.
 4. Click *Show UMAP scatterplot*. You can customize point size.
 
 To select areas, use polygon selection and draw the region (double-click to close). Click the add button to finalize.
-![raw](https://github.com/alessiadb/napari-hsi-analysis/blob/main/images/UMAP_plot_GIF.gif)
-
 The selection creates a label layer usable for spectrum plotting or mask creation.
-
-![raw](https://github.com/alessiadb/napari-hsi-analysis/blob/main/images/UMAP_bar.png)
 
 
 ## Example - Mask from fused dataset
