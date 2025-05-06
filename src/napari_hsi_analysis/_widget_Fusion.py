@@ -82,7 +82,7 @@ class FusionWidget(QWidget):
         )
         self.modes_combobox_3 = ComboBox(
             choices=self.data.modes,
-            label="Select the second dataset",
+            label="Select the third dataset",
             value="-",
         )
 
@@ -130,6 +130,12 @@ class FusionWidget(QWidget):
                 dataset2 = self.data.hypercubes_spatial_red[
                     self.modes_combobox_2.value
                 ]
+                (
+                    self.data.hypercubes_spatial_red["Fused"],
+                    self.data.wls["Fused"],
+                ) = datasets_fusion(
+                    dataset1, dataset2, wl1, wl2, norm=self.modes_fusion.value
+                )
             else:
                 dataset1 = self.data.hypercubes_red[
                     self.modes_combobox_1.value
@@ -157,6 +163,16 @@ class FusionWidget(QWidget):
                     dataset3 = self.data.hypercubes_spatial_red[
                         self.modes_combobox_3.value
                     ]
+                    (
+                        self.data.hypercubes_spatial_red["Fused"],
+                        self.data.wls["Fused"],
+                    ) = datasets_fusion(
+                        self.data.hypercubes_spatial_red["Fused"],
+                        dataset3,
+                        self.data.wls["Fused"],
+                        wl3,
+                        norm=self.modes_fusion.value,
+                    )
                 else:
                     dataset3 = self.data.hypercubes_red[
                         self.modes_combobox_3.value

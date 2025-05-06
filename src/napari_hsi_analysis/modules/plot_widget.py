@@ -186,7 +186,10 @@ class PlotWidget(QWidget):
             if mode == "Fused":
                 mode1, mode2 = self.data.fusion_modes[:2]
                 if reduced_flag:
-                    if self.data.hypercubes_spatial_red["Fused"] is not None:
+                    if (
+                        self.data.hypercubes_spatial_red.get("Fused")
+                        is not None
+                    ):
                         cube = self.data.hypercubes_spatial_red
                     else:
                         cube = self.data.hypercubes_red
@@ -195,7 +198,9 @@ class PlotWidget(QWidget):
 
                 data1 = cube[mode1][points[0], points[1], :]
                 data2 = cube[mode2][points[0], points[1], :]
+                print(data1.shape)
                 data_selected = np.concatenate((data1, data2), axis=1)
+                print(data_selected.shape)
                 if len(self.data.fusion_modes) > 2:
                     mode3 = self.data.fusion_modes[2]
                     data3 = cube[mode3][points[0], points[1], :]

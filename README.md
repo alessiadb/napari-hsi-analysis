@@ -7,9 +7,14 @@
 [![codecov](https://codecov.io/gh/alessiadb/napari-hsi-analysis/branch/main/graph/badge.svg)](https://codecov.io/gh/alessiadb/napari-hsi-analysis)
 [![napari hub](https://img.shields.io/endpoint?url=https://api.napari-hub.org/shields/napari-hsi-analysis)](https://napari-hub.org/plugins/napari-hsi-analysis)
 
-Napari plugin to perform analysis on Hyperspectral Imaging datasets.
+A Napari plugin to perform analysis on Hyperspectral Imaging datasets.
+
+The 'Data Manager' widget loads, opens and visualize the datasets.
+The 'Fusion' widget fused two or three opened datasets.
+The 'UMAP' widget perform and visualize the Uniform Manifold Approximation and Projection analysis.
 
 ----------------------------------
+
 
 This [napari] plugin was generated with [copier] using the [napari-plugin-template].
 
@@ -33,6 +38,9 @@ You can install `napari-hsi-analysis` via [pip]:
 To install latest development version :
 
     pip install git+https://github.com/alessiadb/napari-hsi-analysis.git
+
+## Usage
+A detailed guide which shows how to use the plugin and how to properly choose the parameters can be found [here].
 
 
 ## Contributing
@@ -66,3 +74,5 @@ If you encounter any problems, please [file an issue] along with a detailed desc
 [tox]: https://tox.readthedocs.io/en/latest/
 [pip]: https://pypi.org/project/pip/
 [PyPI]: https://pypi.org/
+
+[here]:  https://github.com/alessiadb/napari-hsi-analysis/blob/main/docs/guide.md
